@@ -15,8 +15,9 @@ function lang() {
   if (process.env.CAF_LANG) return process.env.CAF_LANG === 'en' ? 'en' : 'ar';
   try { return JSON.parse(fs.readFileSync(P.settings, 'utf8')).lang === 'en' ? 'en' : 'ar'; } catch { return 'ar'; }
 }
-const L = lang();
-const tr = (ar, en) => (L === 'en' ? en : ar);
+const st = { L: lang() };
+const tr = (ar, en) => (st.L === 'en' ? en : ar);
+const setLang = (l) => { st.L = l === 'en' ? 'en' : 'ar'; };
 
 const say = (s = '') => console.log(s);
 const ok = (s) => say(`  ${green('✓')} ${s}`);
@@ -32,4 +33,6 @@ function banner() {
   say(`  ${gray('─'.repeat(52))}`);
 }
 
-module.exports = { amber, green, gray, copper, bold, tr, L, say, ok, info, step, fail, banner };
+const clear = () => { if (process.stdout.isTTY) process.stdout.write('\x1b[2J\x1b[3J\x1b[H'); };
+const rule = () => gray('  ' + '─'.repeat(52));
+module.exports = { amber, green, gray, copper, bold, tr, setLang, say, ok, info, step, fail, banner, clear, rule };

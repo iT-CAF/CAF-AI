@@ -81,17 +81,32 @@ irm https://raw.githubusercontent.com/iT-CAF/CAF-AI/main/install-caf-ai.ps1 | ie
 startcaf
 ```
 
-في **أول تشغيل** يُنزَّل المحرك المحلي (Ollama) ثم تختار نموذجًا من قائمة (يوصى بـ `qwen2.5:7b` للعربية). بعدها يفتح المتصفح على الدردشة. في كل مرة لاحقة يفتح فورًا.
+تفتح **قائمة بالأرقام** (تضغط الرقم مباشرة بدون Enter، أو الأسهم ثم Enter):
+
+| الرقم | الوظيفة |
+|---|---|
+| `1` | تشغيل وفتح الدردشة في المتصفح (أو فتحها إن كان يعمل) |
+| `2` | إعادة التشغيل |
+| `3` | إيقاف |
+| `4` | النماذج: تنزيل نموذج بالأرقام `1-5`، أو نموذج آخر `6`، أو حذف `7` |
+| `5` | الإعدادات: اللغة، المظهر، التحديث، فتح مجلد البيانات، الحقوق |
+| `0` | خروج (كآف AI يبقى يعمل في الخلفية) |
+
+يعمل كآف AI في الخلفية فتبقى الطرفية حرة. في **أول تشغيل** يُنزَّل المحرك المحلي (Ollama) ثم تختار نموذجك الأول بالرقم (يوصى بـ `1` وهو `qwen2.5:7b` للعربية). تعمل الأرقام العربية ١٢٣ أيضًا.
+
+### أوامر سريعة (بدون قائمة)
 
 | الأمر | الوظيفة |
 |---|---|
-| `startcaf` | تشغيل كآف AI وفتح الدردشة في المتصفح |
-| `startcaf --no-open` | التشغيل بدون فتح المتصفح |
-| `startcaf stop` | إيقاف كآف AI |
-| `startcaf status` | حالة التشغيل |
-| `startcaf --lang en` | لغة الطرفية: `ar` أو `en` |
-
-للإيقاف اضغط `Ctrl+C` في الطرفية أو شغّل `startcaf stop`.
+| `startcaf start` | تشغيل سريع وفتح الدردشة |
+| `startcaf restart` | إعادة التشغيل |
+| `startcaf stop` | إيقاف |
+| `startcaf status` | الحالة |
+| `startcaf models` | النماذج المثبّتة |
+| `startcaf run` | تشغيل في نفس النافذة (`Ctrl+C` للإيقاف) |
+| `startcaf update` | تحديث |
+| `--no-open` | بدون فتح المتصفح |
+| `--lang en` | لغة الطرفية: `ar` أو `en` |
 
 ## الواجهة
 
@@ -208,17 +223,32 @@ Unzip, then run once:
 startcaf
 ```
 
-On the **first run** it downloads the local engine (Ollama) and lets you pick a model (`qwen2.5:7b` is recommended for Arabic). Then your browser opens on the chat. Every later run opens instantly.
+A **numbered menu** opens (press the number directly, no Enter needed, or use arrows + Enter):
+
+| Key | What it does |
+|---|---|
+| `1` | Start and open the chat in your browser (or just open it if running) |
+| `2` | Restart |
+| `3` | Stop |
+| `4` | Models: download with `1-5`, another model `6`, delete `7` |
+| `5` | Settings: language, appearance, update, open data folder, rights |
+| `0` | Exit (CAF AI keeps running in the background) |
+
+CAF AI runs in the background so your terminal stays free. On the **first run** it downloads the local engine (Ollama) and you pick your first model by number (`1` is `qwen2.5:7b`, recommended for Arabic). Arabic digits ١٢٣ work too.
+
+### Quick commands (no menu)
 
 | Command | What it does |
 |---|---|
-| `startcaf` | Start CAF AI and open the chat in your browser |
-| `startcaf --no-open` | Start without opening the browser |
-| `startcaf stop` | Stop CAF AI |
+| `startcaf start` | Quick start and open the chat |
+| `startcaf restart` | Restart |
+| `startcaf stop` | Stop |
 | `startcaf status` | Show status |
-| `startcaf --lang en` | Terminal language: `ar` or `en` |
-
-Stop it with `Ctrl+C` in the terminal or run `startcaf stop`.
+| `startcaf models` | Installed models |
+| `startcaf run` | Run in this window (`Ctrl+C` to stop) |
+| `startcaf update` | Update |
+| `--no-open` | Do not open the browser |
+| `--lang en` | Terminal language: `ar` or `en` |
 
 ## Interface
 

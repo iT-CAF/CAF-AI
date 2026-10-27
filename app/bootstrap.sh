@@ -31,11 +31,4 @@ else
 fi
 
 cd "$ROOT"
-CMD="${1:-start}"
-case "$CMD" in
-  start|--no-open|--lang|--lang=*)
-    [ "$CMD" = "start" ] && shift || true
-    "$NODE_BIN" app/cli.js ensure "$@"
-    exec "$NODE_BIN" app/server.js "$@";;
-  *) exec "$NODE_BIN" app/cli.js "$@";;
-esac
+exec "$NODE_BIN" app/cli.js "$@"

@@ -3,10 +3,10 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const { spawn } = require('child_process');
 const { P, VERSION, ensureDirs, findOllama } = require('./lib/paths');
 const engine = require('./lib/engine');
 const ui = require('./lib/ui');
+const { openTarget } = require('./lib/open');
 const { tr, say, ok, info, step, fail, amber } = ui;
 
 const MIME = {
@@ -229,14 +229,7 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-function openBrowser(url) {
-  try {
-    const cmd = process.platform === 'darwin' ? ['open', [url]]
-      : process.platform === 'win32' ? ['cmd', ['/c', 'start', '', url]]
-        : ['xdg-open', [url]];
-    spawn(cmd[0], cmd[1], { stdio: 'ignore', detached: true, windowsHide: true }).on('error', () => {}).unref();
-  } catch { /* لا مشكلة: الرابط معروض في الطرفية */ }
-}
+const openBrowser = openTarget;
 
 function shutdown(code) {
   engine.stopEngine();

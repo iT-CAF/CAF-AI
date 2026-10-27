@@ -36,11 +36,5 @@ if (-not $NodeExe) {
   $NodeExe = $local
 }
 Set-Location $Root
-$first = if ($CmdArgs.Count) { $CmdArgs[0] } else { "start" }
-if ($first -in @("start", "--no-open", "--lang") -or $first -like "--lang=*") {
-  $rest = if ($first -eq "start") { @($CmdArgs | Select-Object -Skip 1) } else { $CmdArgs }
-  & $NodeExe "app\cli.js" ensure @rest
-  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-  & $NodeExe "app\server.js" @rest
-} else { & $NodeExe "app\cli.js" @CmdArgs }
+& $NodeExe "app\cli.js" @CmdArgs
 exit $LASTEXITCODE
