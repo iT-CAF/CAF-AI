@@ -1,0 +1,66 @@
+:root {
+  --graphite-ink: #0E1113;
+  --deep-slate: #1A2024;
+  --slate-line: #2C343A;
+  --terminal-amber: #E8A33D;
+  --amber-deep: #B07220;
+  --amber-ink: #8C5A12;
+  --verdigris: #3E8E7E;
+  --verdigris-light: #5FB3A1;
+  --verdigris-ink: #2C6B5E;
+  --oxide-copper: #C2683A;
+  --copper-light: #DB8556;
+  --copper-ink: #9E4F25;
+  --bone: #EDE8DF;
+  --paper: #F6F3EE;
+  --bone-deep: #E2DBCF;
+  --line-light: #CFC7BA;
+  --fog-gray: #8A9399;
+  --fog-ink: #596268;
+}
+:root, [data-theme="dark"] {
+  --surface: var(--graphite-ink);
+  --surface-raised: var(--deep-slate);
+  --surface-sunken: #090b0c;
+  --line: var(--slate-line);
+  --line-strong: var(--fog-gray);
+  --text: var(--bone);
+  --text-muted: var(--fog-gray);
+  --accent: var(--terminal-amber);
+  --accent-text: var(--terminal-amber);
+  --accent-fill: var(--terminal-amber);
+  --on-accent: var(--graphite-ink);
+  --secondary: var(--verdigris);
+  --secondary-text: var(--verdigris-light);
+  --signal: var(--oxide-copper);
+  --signal-text: var(--copper-light);
+  --focus: var(--terminal-amber);
+  --syntax-plain: var(--bone);
+  --syntax-keyword: var(--terminal-amber);
+  --syntax-string: var(--verdigris-light);
+  --syntax-number: var(--copper-light);
+  --syntax-comment: var(--fog-gray);
+}
+[data-theme="light"] {
+  --surface: var(--bone);
+  --surface-raised: var(--paper);
+  --surface-sunken: var(--bone-deep);
+  --line: var(--line-light);
+  --line-strong: var(--fog-ink);
+  --text: var(--graphite-ink);
+  --text-muted: var(--fog-ink);
+  --accent: var(--amber-deep);
+  --accent-text: var(--amber-ink);
+  --accent-fill: var(--terminal-amber);
+  --on-accent: var(--graphite-ink);
+  --secondary: var(--verdigris);
+  --secondary-text: var(--verdigris-ink);
+  --signal: var(--oxide-copper);
+  --signal-text: var(--copper-ink);
+  --focus: var(--amber-ink);
+  --syntax-plain: var(--graphite-ink);
+  --syntax-keyword: var(--amber-ink);
+  --syntax-string: var(--verdigris-ink);
+  --syntax-number: var(--copper-ink);
+  --syntax-comment: var(--fog-ink);
+}

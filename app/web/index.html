@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>كآف AI · CAF AI</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/brand/itcaf-colors.css">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<a class="skip" href="#input" data-i18n="skip"></a>
+<div class="app" id="app">
+  <aside class="sidebar" id="sidebar" aria-label="sidebar">
+    <div class="brand">
+      <a href="https://store.it-caf.com" target="_blank" rel="noopener noreferrer" aria-label="iT CAF">
+        <img class="logo logo-dark" src="/brand/itcaf-horizontal-on-graphite.svg" alt="iT CAF · كآف">
+        <img class="logo logo-light" src="/brand/itcaf-horizontal-on-bone.svg" alt="iT CAF · كآف">
+      </a>
+    </div>
+    <div class="side-actions">
+      <button class="btn primary block" id="newChat"><span class="ic" style="--i:url(/brand/icons/plus.svg)"></span><span data-i18n="newChat"></span><kbd>⌘K</kbd></button>
+      <label class="search"><span class="ic" style="--i:url(/brand/icons/search.svg)"></span><input id="search" type="search" data-i18n-ph="search" autocomplete="off"></label>
+    </div>
+    <nav class="chat-list" id="chatList" aria-label="chats"></nav>
+    <div class="side-foot">
+      <button class="btn ghost block" id="openSettings"><span class="ic" style="--i:url(/brand/icons/sliders.svg)"></span><span data-i18n="settings"></span></button>
+      <p class="rights"><span id="rightsShort"></span><br><a href="https://store.it-caf.com" target="_blank" rel="noopener noreferrer">store.it-caf.com</a></p>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+
+  <main class="main">
+    <header class="topbar">
+      <button class="btn icon-only mobile-only" id="toggleSide" data-i18n-title="menu" aria-label="menu"><span class="ic" style="--i:url(/brand/icons/menu.svg)"></span></button>
+      <div class="model-pill" title="">
+        <span class="status" id="status"></span>
+        <span class="ic" style="--i:url(/brand/icons/chip.svg)"></span>
+        <select id="modelSelect" aria-label="model"></select>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn icon-only" id="exportChat" data-i18n-title="export"><span class="ic" style="--i:url(/brand/icons/download.svg)"></span></button>
+      <button class="btn icon-only lang-btn" id="langBtn" data-i18n-title="language"><span class="ic" style="--i:url(/brand/icons/globe.svg)"></span><b id="langLbl">EN</b></button>
+      <button class="btn icon-only" id="themeBtn" data-i18n-title="theme" aria-label="theme"><span class="ic" id="themeIc" style="--i:url(/brand/icons/sun.svg)"></span></button>
+    </header>
+
+    <section class="thread" id="thread" aria-live="polite">
+      <div class="empty" id="empty">
+        <p class="eyebrow">~/caf-ai · <span id="verTag"></span></p>
+        <h1 data-i18n="welcomeTitle"></h1>
+        <p class="lead" data-i18n="welcomeSub"></p>
+        <p class="prompt-line" aria-hidden="true"><span class="gt">&gt;</span> <span data-i18n="promptLine"></span><span class="cursor"></span></p>
+        <ul class="badges">
+          <li><span class="ic" style="--i:url(/brand/icons/lock.svg)"></span><span data-i18n="b1"></span></li>
+          <li><span class="ic" style="--i:url(/brand/icons/shield.svg)"></span><span data-i18n="b2"></span></li>
+          <li><span class="ic" style="--i:url(/brand/icons/server.svg)"></span><span data-i18n="b3"></span></li>
+        </ul>
+        <div class="suggest" id="suggest"></div>
+      </div>
+      <div class="msgs" id="msgs"></div>
+    </section>
+    <button class="to-bottom hidden" id="toBottom" data-i18n-title="toBottom"><span class="ic" style="--i:url(/brand/icons/down.svg)"></span></button>
+
+    <footer class="composer-wrap">
+      <div class="composer">
+        <textarea id="input" rows="1" data-i18n-ph="placeholder" dir="auto" aria-label="message"></textarea>
+        <button class="btn primary send" id="send" data-i18n-title="send" aria-label="send"><span class="ic" style="--i:url(/brand/icons/up.svg)"></span></button>
+        <button class="btn stop hidden" id="stop" data-i18n-title="stop" aria-label="stop"><span class="sq"></span></button>
+      </div>
+      <p class="hint"><span data-i18n="hint"></span></p>
+    </footer>
+  </main>
+</div>
+
+<dialog id="settingsDlg" aria-labelledby="dlgTitle">
+  <form method="dialog" class="dlg">
+    <header><h2 id="dlgTitle" data-i18n="settings" tabindex="-1" autofocus></h2><button class="btn icon-only" value="close" data-i18n-title="close" aria-label="close"><span class="ic" style="--i:url(/brand/icons/close.svg)"></span></button></header>
+    <div class="dlg-body">
+      <section>
+        <h3 data-i18n="general"></h3>
+        <div class="field"><span data-i18n="language"></span>
+          <div class="seg" id="segLang" role="group"><button type="button" data-v="ar">العربية</button><button type="button" data-v="en">English</button></div></div>
+        <div class="field"><span data-i18n="theme"></span>
+          <div class="seg" id="segTheme" role="group"><button type="button" data-v="system" data-i18n="system"></button><button type="button" data-v="light" data-i18n="light"></button><button type="button" data-v="dark" data-i18n="dark"></button></div></div>
+      </section>
+      <section>
+        <h3 data-i18n="behavior"></h3>
+        <label class="field"><span data-i18n="systemPrompt"></span>
+          <textarea id="setSystem" rows="4" dir="auto" data-i18n-ph="systemPromptPh"></textarea></label>
+        <label class="field"><span><span data-i18n="temperature"></span> <output id="tempOut"></output></span>
+          <input type="range" id="setTemp" min="0" max="1.5" step="0.1"></label>
+        <label class="field"><span data-i18n="context"></span>
+          <select id="setCtx"><option>2048</option><option>4096</option><option>8192</option><option>16384</option><option>32768</option></select></label>
+      </section>
+      <section>
+        <h3 data-i18n="models"></h3>
+        <ul class="model-list" id="modelList"></ul>
+        <div class="row">
+          <input id="pullName" dir="ltr" placeholder="qwen2.5:7b" spellcheck="false" aria-label="model name">
+          <button type="button" class="btn primary" id="pullBtn" data-i18n="download"></button>
+        </div>
+        <div class="progress hidden" id="pullProg"><div id="pullBar"></div><span id="pullTxt"></span></div>
+      </section>
+      <section>
+        <h3 data-i18n="data"></h3>
+        <div class="row wrap">
+          <button type="button" class="btn danger" id="wipeChats" data-i18n="deleteAll"></button>
+          <button type="button" class="btn" id="quitApp" data-i18n="quit"></button>
+        </div>
+      </section>
+      <section class="about">
+        <img src="/brand/itcaf-horizontal-on-graphite.svg" class="logo-dark" alt="iT CAF">
+        <img src="/brand/itcaf-horizontal-on-bone.svg" class="logo-light" alt="iT CAF">
+        <p id="aboutTxt"></p>
+        <p class="rights" id="rightsFull"></p>
+      </section>
+    </div>
+  </form>
+</dialog>
+<div class="toast hidden" id="toast" role="status"></div>
+
+<script src="/i18n.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

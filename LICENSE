@@ -1,0 +1,82 @@
+رخصة استخدام كآف AI  ·  CAF AI End-User License
+================================================
+حقوق النشر © 2026 كآف · iT CAF — جميع الحقوق محفوظة.
+Copyright © 2026 iT CAF (كآف) — All rights reserved.
+
+──────────────────────────── العربية ────────────────────────────
+
+1. الملكية
+   كآف AI (البرنامج) بما فيه الشيفرة المصدرية وواجهته وأسماء ملفاته وشعاره وهويته
+   البصرية (الألوان والخطوط والرموز) ملك حصري لـ iT CAF. هذه الرخصة تمنحك حق
+   الاستخدام فقط، ولا تنقل إليك أي ملكية.
+
+2. ما يُسمح به
+   يمنحك iT CAF رخصة غير حصرية وغير قابلة للتحويل ومجانية لـ:
+   أ) تنزيل البرنامج وتشغيله على أي عدد من أجهزتك أو أجهزة منشأتك؛
+   ب) استخدامه لأغراض شخصية أو تجارية داخلية؛
+   ج) نسخه على وسائط تخزين (مثل فلاشة USB) لاستخدامك أنت أو موظفيك.
+
+3. ما لا يُسمح به دون إذن كتابي من iT CAF
+   أ) بيع البرنامج أو تأجيره أو إعادة توزيعه أو نشره بأي صورة، كاملًا أو جزئيًا؛
+   ب) تعديل البرنامج أو إنشاء أعمال مشتقة منه أو إعادة تسميته؛
+   ج) إزالة أو تغيير إشعارات الحقوق أو الشعار أو اسم iT CAF؛
+   د) استخدام اسم «كآف» أو «CAF AI» أو «iT CAF» أو شعارها أو هويتها البصرية
+      لتسمية منتج أو خدمة أخرى أو الإيحاء بأي ارتباط بـ iT CAF؛
+   هـ) الهندسة العكسية لأجزاء البرنامج، إلا بالقدر الذي يسمح به القانون صراحة.
+
+4. مكوّنات الطرف الثالث
+   يُنزّل المثبّت على جهازك مكوّنات مستقلة (مثل محرك Ollama وبيئة Node.js
+   ونماذج الذكاء الاصطناعي). لا يعيد iT CAF توزيعها في هذا المستودع، وهي خاضعة
+   لرخصها الخاصة المذكورة في NOTICES.md. أنت مسؤول عن الالتزام بشروط رخصة أي نموذج
+   تختار تنزيله، ولا تغيّر هذه الرخصة شروطها.
+
+5. الخصوصية
+   يعمل البرنامج محليًا ولا يرسل محادثاتك إلى iT CAF ولا إلى أي جهة. لا يحتوي على
+   تتبّع أو قياس استخدام. يتطلب الإنترنت فقط عند تنزيل المحرك والنماذج.
+
+6. إخلاء المسؤولية
+   يُقدَّم البرنامج «كما هو» دون أي ضمان صريح أو ضمني، بما في ذلك الملاءمة لغرض
+   معيّن. مخرجات النماذج قد تكون خاطئة، وتقع مسؤولية مراجعتها واستخدامها عليك.
+   لا يتحمل iT CAF مسؤولية أي أضرار ناتجة عن استخدام البرنامج أو عدم القدرة على
+   استخدامه، إلى أقصى حد يسمح به القانون.
+
+7. الإنهاء
+   تنتهي هذه الرخصة تلقائيًا عند مخالفة أي من شروطها، وعليك عندها حذف جميع النسخ.
+
+للاستفسار أو لطلب إذن خاص: عبر صفحة iT CAF على GitHub (github.com/iT-CAF).
+
+────────────────────────────── English ──────────────────────────────
+
+1. Ownership. CAF AI (the "Software"), including its source code, interface, file
+   names, logo and visual identity, is the exclusive property of iT CAF. This
+   license grants a right to use only; no ownership is transferred.
+
+2. Permitted. iT CAF grants you a free, non-exclusive, non-transferable license to
+   (a) download and run the Software on any number of your or your organization's
+   devices; (b) use it for personal or internal business purposes; (c) copy it to
+   storage media (e.g. a USB drive) for use by you or your staff.
+
+3. Not permitted without iT CAF's prior written consent: (a) selling, renting,
+   redistributing or publishing the Software in whole or in part; (b) modifying it,
+   creating derivative works, or rebranding it; (c) removing or altering copyright
+   notices, logos or the iT CAF name; (d) using the names "CAF", "CAF AI" or
+   "iT CAF", their logos or visual identity to name another product or service or to
+   imply affiliation; (e) reverse engineering, except as law expressly permits.
+
+4. Third-party components. The installer downloads independent components onto your
+   device (e.g. the Ollama engine, Node.js, AI models). They are not redistributed
+   in this repository and remain under their own licenses listed in NOTICES.md. You
+   are responsible for complying with the license of any model you download; this
+   license does not alter those terms.
+
+5. Privacy. The Software runs locally and does not send your conversations to
+   iT CAF or anyone else. It contains no tracking or telemetry. The internet is
+   needed only to download the engine and models.
+
+6. Disclaimer. The Software is provided "AS IS" without warranty of any kind. Model
+   outputs may be wrong; you are responsible for reviewing and using them. To the
+   maximum extent permitted by law, iT CAF is not liable for any damages arising
+   from use of, or inability to use, the Software.
+
+7. Termination. This license ends automatically if you breach any of its terms, and
+   you must then delete all copies.

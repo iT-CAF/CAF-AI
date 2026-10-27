@@ -1,0 +1,8 @@
+# بيانات المستخدم والمكوّنات المنزّلة وقت التثبيت — لا تُرفع
+engine/
+models/
+runtime/
+data/
+node_modules/
+.DS_Store
+*.part

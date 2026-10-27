@@ -1,0 +1,13 @@
+{
+  "name": "caf-ai",
+  "version": "1.0.0",
+  "description": "CAF AI — private local AI assistant, Arabic-first. by CAF · iT CAF",
+  "private": true,
+  "license": "SEE LICENSE IN LICENSE",
+  "author": "CAF · iT CAF (https://store.it-caf.com)",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node app/server.js",
+    "startcaf": "node app/cli.js ensure && node app/server.js"
+  }
+}

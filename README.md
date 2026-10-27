@@ -1,0 +1,277 @@
+<div align="center">
+
+<img src="app/web/brand/itcaf-horizontal-on-graphite.svg" alt="iT CAF · كآف" width="380">
+
+# كآف AI · CAF AI
+
+**مساعدك الذكي الخاص: يعمل على جهازك، بلا إنترنت ولا اشتراك، وبواجهة عربية كاملة.**
+**Your private AI assistant: runs on your machine, no internet, no subscription, Arabic-first.**
+
+`macOS` · `Windows` · `Linux` &nbsp;|&nbsp; [العربية](#ar) · [English](#en)
+
+<img src="docs/gifs/caf-ai-startcaf.gif" alt="startcaf" width="780">
+
+**by CAF** · [store.it-caf.com](https://store.it-caf.com)
+
+</div>
+
+---
+
+<a id="ar"></a>
+
+# العربية
+
+## ما هو كآف AI؟
+
+مساعد ذكاء اصطناعي يعمل بالكامل على جهازك. تكتب أمرًا واحدًا في الطرفية:
+
+```
+startcaf
+```
+
+فيشغّل كآف AI ويفتح لك الدردشة مباشرة في المتصفح على **http://127.0.0.1:3737/**.
+
+- **خصوصية كاملة:** محادثاتك تبقى على جهازك. لا تتبّع ولا حساب ولا سحابة.
+- **عربي أولًا:** واجهة RTL افتراضيًا بخطوط هوية كآف، وتبديل فوري إلى الإنجليزية.
+- **ليلي ونهاري:** وضع ليلي ونهاري أو تلقائي حسب جهازك.
+- **بلا إنترنت** بعد التثبيت الأول.
+- **المشروع خفيف:** لا برامج ولا نماذج داخله. المحرك والنماذج تُنزَّل عند أول تشغيل إلى مجلدك الشخصي.
+
+<div align="center">
+<img src="docs/gifs/caf-ai-chat.gif" alt="دردشة عربية" width="780">
+</div>
+
+## التثبيت
+
+ثبّت الأمر `startcaf` مرة واحدة، ثم افتح **طرفية جديدة**.
+
+### macOS و Linux
+
+الصق في أي طرفية (Terminal، iTerm2، Warp، Ghostty، GNOME Terminal، Konsole، Alacritty، kitty، طرفية VS Code…):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/iT-CAF/CAF-AI/main/install-caf-ai.sh | bash
+```
+
+### Windows
+
+الصق في **PowerShell** أو **Windows Terminal**:
+
+```powershell
+irm https://raw.githubusercontent.com/iT-CAF/CAF-AI/main/install-caf-ai.ps1 | iex
+```
+
+يعمل الأمر بعد التثبيت في PowerShell وcmd وGit Bash.
+
+### التثبيت من ملف ZIP
+
+فكّ الضغط ثم شغّل مرة واحدة:
+
+| النظام | الأمر |
+|---|---|
+| macOS | `bash install-caf-ai.sh` (أو انقر مرتين على `install-caf-ai.command`) |
+| Linux | `bash install-caf-ai.sh` |
+| Windows | انقر مرتين على `install-caf-ai.bat` |
+
+> المثبّت يضع الأمر `startcaf` في مسارك (`~/.local/bin` في macOS وLinux، و`%LOCALAPPDATA%\CAF-AI\bin` في Windows) ولا يحتاج صلاحيات مدير.
+
+## التشغيل
+
+```
+startcaf
+```
+
+في **أول تشغيل** يُنزَّل المحرك المحلي (Ollama) ثم تختار نموذجًا من قائمة (يوصى بـ `qwen2.5:7b` للعربية). بعدها يفتح المتصفح على الدردشة. في كل مرة لاحقة يفتح فورًا.
+
+| الأمر | الوظيفة |
+|---|---|
+| `startcaf` | تشغيل كآف AI وفتح الدردشة في المتصفح |
+| `startcaf --no-open` | التشغيل بدون فتح المتصفح |
+| `startcaf stop` | إيقاف كآف AI |
+| `startcaf status` | حالة التشغيل |
+| `startcaf --lang en` | لغة الطرفية: `ar` أو `en` |
+
+للإيقاف اضغط `Ctrl+C` في الطرفية أو شغّل `startcaf stop`.
+
+## الواجهة
+
+<div align="center">
+<img src="docs/gifs/caf-ai-settings.gif" alt="الإعدادات والمظهر واللغة" width="780">
+</div>
+
+- بث فوري للردود مع سرعة التوليد (توكن/ث).
+- محادثات محفوظة مع بحث وتجميع حسب التاريخ، وتسمية وحذف.
+- إعادة التوليد، نسخ الأكواد، تصدير المحادثة بصيغة Markdown.
+- تعليمات نظام مخصّصة، ودرجة الإبداع، وحجم السياق.
+- تنزيل النماذج وحذفها من **الإعدادات ← النماذج**.
+- اختصار `⌘K` / `Ctrl+K` لمحادثة جديدة.
+
+## متطلبات الجهاز
+
+| النموذج | الحجم | الذاكرة الموصى بها |
+|---|---|---|
+| `llama3.2:3b` / `qwen2.5:3b` | ~2 GB | 4 GB |
+| `gemma3:4b` | 3.3 GB | 6 GB |
+| `qwen2.5:7b` (موصى به) | 4.7 GB | 8 GB |
+| `qwen2.5:14b` | 9 GB | 16 GB |
+
+يتطلب أول تشغيل اتصالًا بالإنترنت لتنزيل المحرك (حجمه من ~200 MB على macOS إلى ~1.5 GB على Linux/Windows) والنموذج. إن كان Ollama مثبّتًا عندك فسيُستخدم ولن يُنزَّل من جديد، وتُستخدم نماذجك الموجودة في `~/.ollama/models`.
+
+## أين تُحفظ الملفات؟
+
+كل شيء خارج مجلد المشروع:
+
+| النظام | المجلد |
+|---|---|
+| macOS / Linux | `~/.caf-ai` |
+| Windows | `%LOCALAPPDATA%\CAF-AI` |
+
+يحتوي على المحرك والنماذج وبيئة Node.js المحمولة ومحادثاتك وإعداداتك. لتغيير المكان عيّن المتغير `CAF_HOME`.
+
+## التحديث والإزالة
+
+- **التحديث:** أعد تشغيل أمر التثبيت.
+- **الإزالة:** احذف مجلد الملفات أعلاه، ثم احذف الأمر `~/.local/bin/startcaf` في macOS/Linux (وسطر `# caf-ai PATH` من ملف الطرفية). في Windows احذف المجلد ثم أزل `...\CAF-AI\bin` من متغير PATH.
+
+## حل المشاكل
+
+- **`startcaf: command not found`:** افتح طرفية جديدة، أو شغّل `source ~/.zshrc` (أو `~/.bashrc`).
+- **العربية تظهر مقطّعة في الطرفية:** بعض الطرفيات (مثل Terminal في macOS وcmd في Windows) لا تدعم ربط الحروف العربية. استخدم iTerm2 أو Windows Terminal أو طرفية VS Code، أو شغّل `startcaf --lang en`. واجهة الدردشة في المتصفح غير متأثرة.
+- **المنفذ 3737 مشغول بتطبيق آخر:** يختار كآف AI المنفذ التالي تلقائيًا ويعرضه في الطرفية.
+- **Linux:** إن لزم فك ضغط المحرك ولم يتوفر `zstd` فثبّته (`sudo apt install zstd`).
+
+## الحقوق والرخصة
+
+**© 2026 كآف · iT CAF — by CAF. جميع الحقوق محفوظة.**
+الاستخدام مجاني للأفراد والمنشآت، ولا يجوز بيع البرنامج أو إعادة توزيعه أو تعديله أو إعادة تسميته. التفاصيل في [LICENSE](LICENSE). المكوّنات الخارجية (Ollama والنماذج) لها رخصها في [NOTICES.md](NOTICES.md).
+
+---
+
+<a id="en"></a>
+<div dir="ltr">
+
+# English
+
+## What is CAF AI?
+
+An AI assistant that runs entirely on your machine. Type one command in your terminal:
+
+```
+startcaf
+```
+
+It starts CAF AI and opens the chat straight in your browser at **http://127.0.0.1:3737/**.
+
+- **Fully private:** your chats stay on your device. No tracking, no account, no cloud.
+- **Arabic-first:** RTL interface by default with the CAF brand fonts, switchable to English instantly.
+- **Night & day:** dark, light, or automatic to match your system.
+- **Offline** after the first setup.
+- **Lightweight project:** no programs or models inside it. The engine and models are downloaded on first run into your user folder.
+
+## Install
+
+Install the `startcaf` command once, then open a **new terminal**.
+
+### macOS & Linux
+
+Paste into any terminal (Terminal, iTerm2, Warp, Ghostty, GNOME Terminal, Konsole, Alacritty, kitty, VS Code terminal…):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/iT-CAF/CAF-AI/main/install-caf-ai.sh | bash
+```
+
+### Windows
+
+Paste into **PowerShell** or **Windows Terminal**:
+
+```powershell
+irm https://raw.githubusercontent.com/iT-CAF/CAF-AI/main/install-caf-ai.ps1 | iex
+```
+
+After installation the command works in PowerShell, cmd and Git Bash.
+
+### Install from the ZIP
+
+Unzip, then run once:
+
+| OS | Command |
+|---|---|
+| macOS | `bash install-caf-ai.sh` (or double-click `install-caf-ai.command`) |
+| Linux | `bash install-caf-ai.sh` |
+| Windows | double-click `install-caf-ai.bat` |
+
+> The installer puts `startcaf` on your PATH (`~/.local/bin` on macOS/Linux, `%LOCALAPPDATA%\CAF-AI\bin` on Windows). No administrator rights needed.
+
+## Run
+
+```
+startcaf
+```
+
+On the **first run** it downloads the local engine (Ollama) and lets you pick a model (`qwen2.5:7b` is recommended for Arabic). Then your browser opens on the chat. Every later run opens instantly.
+
+| Command | What it does |
+|---|---|
+| `startcaf` | Start CAF AI and open the chat in your browser |
+| `startcaf --no-open` | Start without opening the browser |
+| `startcaf stop` | Stop CAF AI |
+| `startcaf status` | Show status |
+| `startcaf --lang en` | Terminal language: `ar` or `en` |
+
+Stop it with `Ctrl+C` in the terminal or run `startcaf stop`.
+
+## Interface
+
+- Live streaming replies with generation speed (tokens/s).
+- Saved chats with search, date grouping, rename and delete.
+- Regenerate, copy code blocks, export a chat as Markdown.
+- Custom system prompt, creativity and context size.
+- Download and delete models in **Settings → Models**.
+- `⌘K` / `Ctrl+K` for a new chat.
+
+## Requirements
+
+| Model | Size | Recommended RAM |
+|---|---|---|
+| `llama3.2:3b` / `qwen2.5:3b` | ~2 GB | 4 GB |
+| `gemma3:4b` | 3.3 GB | 6 GB |
+| `qwen2.5:7b` (recommended) | 4.7 GB | 8 GB |
+| `qwen2.5:14b` | 9 GB | 16 GB |
+
+The first run needs internet to download the engine (about 200 MB on macOS, about 1.5 GB on Linux/Windows) and a model. If Ollama is already installed it is reused and not downloaded again, and your existing models in `~/.ollama/models` are used.
+
+## Where are the files?
+
+Everything lives outside the project folder:
+
+| OS | Folder |
+|---|---|
+| macOS / Linux | `~/.caf-ai` |
+| Windows | `%LOCALAPPDATA%\CAF-AI` |
+
+It holds the engine, models, portable Node.js, your chats and settings. Set `CAF_HOME` to move it.
+
+## Update & uninstall
+
+- **Update:** run the install command again.
+- **Uninstall:** delete the folder above, then remove `~/.local/bin/startcaf` on macOS/Linux (and the `# caf-ai PATH` line from your shell profile). On Windows delete the folder and remove `...\CAF-AI\bin` from PATH.
+
+## Troubleshooting
+
+- **`startcaf: command not found`:** open a new terminal, or run `source ~/.zshrc` (or `~/.bashrc`).
+- **Arabic looks disconnected in the terminal:** some terminals (macOS Terminal, Windows cmd) do not shape Arabic. Use iTerm2, Windows Terminal or the VS Code terminal, or run `startcaf --lang en`. The browser chat is not affected.
+- **Port 3737 is used by another app:** CAF AI picks the next free port automatically and prints it.
+- **Linux:** if the engine needs extracting and `zstd` is missing, install it (`sudo apt install zstd`).
+
+## Rights & license
+
+**© 2026 CAF · iT CAF — by CAF. All rights reserved.**
+Free to use for individuals and organizations; selling, redistributing, modifying or rebranding is not permitted. See [LICENSE](LICENSE). Third-party components (Ollama, models) keep their own licenses in [NOTICES.md](NOTICES.md).
+
+<div align="center">
+
+**by CAF** · [store.it-caf.com](https://store.it-caf.com)
+
+</div>
+
+</div>

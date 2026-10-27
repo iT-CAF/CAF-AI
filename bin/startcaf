@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# CAF AI · © 2026 كآف · iT CAF — by CAF. جميع الحقوق محفوظة. انظر LICENSE.
+SELF="$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")"
+exec bash "$(cd "$(dirname "$SELF")/.." && pwd)/app/bootstrap.sh" "$@"
