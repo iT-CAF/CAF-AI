@@ -102,9 +102,17 @@ function proxyStream(req, res, enginePath, bodyObj) {
   up.write(data); up.end();
 }
 
+// المسارات التي تحتاج المحرك: نتأكد أنه حيّ قبلها ونعيد تشغيله إن توقّف أو تجمّد
+const ENGINE_ROUTES = new Set(['/api/models', '/api/models/pull', '/api/chat']);
+
 async function api(req, res, url) {
   const m = req.method;
   const p = url.pathname;
+
+  if (ENGINE_ROUTES.has(p)) {
+    try { await engine.ensureEngine(); }
+    catch (e) { return send(res, 503, { error: 'engine_unavailable', detail: String(e.message || e) }); }
+  }
 
   if (p === '/api/info' && m === 'GET') {
     return send(res, 200, { name: 'CAF AI', version: VERSION, owner: 'iT CAF', year: new Date().getFullYear() });

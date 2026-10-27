@@ -142,18 +142,22 @@
     prog.classList.remove('hidden'); bar.style.width = '0'; txt.textContent = t('pulling'); $('pullBtn').disabled = true;
     try {
       const r = await fetch('/api/models/pull', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
-      const reader = r.body.getReader(); const dec = new TextDecoder(); let buf = '';
+      const reader = r.body.getReader(); const dec = new TextDecoder(); let buf = ''; let ok = false;
+      const handle = (line) => {
+        if (!line.trim()) return;
+        let j; try { j = JSON.parse(line); } catch { return; }
+        if (j.error) throw new Error(j.detail ? `${j.error}: ${j.detail}` : j.error);
+        if (j.status === 'success') ok = true;
+        if (j.total && j.completed) { const p = Math.floor((j.completed / j.total) * 100); bar.style.width = p + '%'; txt.textContent = `${j.status} · ${p}%`; }
+        else if (j.status) txt.textContent = j.status;
+      };
       for (;;) {
         const { value, done } = await reader.read(); if (done) break;
         buf += dec.decode(value, { stream: true }); let i;
-        while ((i = buf.indexOf('\n')) >= 0) {
-          const line = buf.slice(0, i); buf = buf.slice(i + 1); if (!line.trim()) continue;
-          const j = JSON.parse(line);
-          if (j.error) throw new Error(j.error);
-          if (j.total && j.completed) { const p = Math.floor((j.completed / j.total) * 100); bar.style.width = p + '%'; txt.textContent = `${j.status} · ${p}%`; }
-          else if (j.status) txt.textContent = j.status;
-        }
+        while ((i = buf.indexOf('\n')) >= 0) { handle(buf.slice(0, i)); buf = buf.slice(i + 1); }
       }
+      handle(buf + dec.decode());
+      if (!r.ok || !ok) throw new Error(t('pullFailed'));
       txt.textContent = t('done'); $('pullName').value = '';
       await loadModels();
     } catch (e) { txt.textContent = String(e.message || e); }
