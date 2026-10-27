@@ -16,9 +16,10 @@ function hasModels(dir) {
     if (depth > 5) return false;
     let list = [];
     try { list = fs.readdirSync(d, { withFileTypes: true }); } catch { return false; }
-    return list.some((e) => (e.isFile() && !e.name.startsWith('.')) || (e.isDirectory() && walk(path.join(d, e.name), depth + 1)));
+    return list.some((e) => ((e.isFile() || e.isSymbolicLink()) && !e.name.startsWith('.')) || (e.isDirectory() && walk(path.join(d, e.name), depth + 1)));
   };
-  return walk(path.join(dir, 'manifests'), 0);
+  // Ollama الحديث يحفظ النماذج في manifests-v2
+  return walk(path.join(dir, 'manifests-v2'), 0) || walk(path.join(dir, 'manifests'), 0);
 }
 
 // إن كان عندك نماذج في Ollama أصلًا ولا نماذج في كآف، نستخدمها بدل تنزيلها مرة ثانية
@@ -72,7 +73,10 @@ function findOllama() {
     : process.platform === 'win32' ? [path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Ollama', 'ollama.exe')]
       : ['/usr/local/bin/ollama', '/usr/bin/ollama'];
   const dirs = (process.env.PATH || '').split(path.delimiter).filter(Boolean).map((d) => path.join(d, want));
-  return [...dirs, ...extra].find((f) => { try { return fs.statSync(f).isFile(); } catch { return false; } }) || null;
+  const usable = [...dirs, ...extra].filter((f) => { try { return fs.statSync(f).isFile(); } catch { return false; } });
+  // نسخة على قرص خارجي (‎/Volumes‎) قد تختفي أثناء التشغيل فيتجمّد المحرك: نفضّل النسخة الثابتة
+  const removable = (f) => { try { return /^\/(Volumes|media|mnt|run\/media)\//.test(fs.realpathSync(f)); } catch { return true; } };
+  return usable.find((f) => !removable(f)) || usable[0] || null;
 }
 
 module.exports = { P, VERSION, ensureDirs, findOllama, hasModels, CAF_HOME };

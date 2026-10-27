@@ -15,30 +15,38 @@ const PRESETS = () => [
 ];
 
 // النماذج المثبّتة من ملفات manifests مباشرة (بدون تشغيل المحرك)
+// Ollama الحديث يحفظ في manifests-v2 (المضيف ollama.com) والقديم في manifests (registry.ollama.ai)
+const DEFAULT_HOSTS = ['registry.ollama.ai', 'ollama.com'];
 function listInstalled() {
-  const base = path.join(P.models, 'manifests');
-  const out = [];
+  const found = new Map();
   const dirs = (d) => { try { return fs.readdirSync(d, { withFileTypes: true }); } catch { return []; } };
-  for (const host of dirs(base)) {
-    if (!host.isDirectory()) continue;
-    for (const ns of dirs(path.join(base, host.name))) {
-      if (!ns.isDirectory()) continue;
-      for (const model of dirs(path.join(base, host.name, ns.name))) {
-        if (!model.isDirectory()) continue;
-        for (const tag of dirs(path.join(base, host.name, ns.name, model.name))) {
-          if (!tag.isFile()) continue;
-          let size = 0;
-          try {
-            const m = JSON.parse(fs.readFileSync(path.join(base, host.name, ns.name, model.name, tag.name), 'utf8'));
-            size = (m.layers || []).reduce((a, l) => a + (l.size || 0), 0) + (m.config?.size || 0);
-          } catch { /* */ }
-          const prefix = host.name === 'registry.ollama.ai' ? (ns.name === 'library' ? '' : ns.name + '/') : `${host.name}/${ns.name}/`;
-          out.push({ name: `${prefix}${model.name}:${tag.name}`, size });
+  const isFile = (d, e) => e.isFile() || (e.isSymbolicLink() && (() => { try { return fs.statSync(path.join(d, e.name)).isFile(); } catch { return false; } })());
+  for (const sub of ['manifests-v2', 'manifests']) {
+    const base = path.join(P.models, sub);
+    for (const host of dirs(base)) {
+      if (!host.isDirectory()) continue;
+      const hostName = host.name.replace(/%3a/gi, ':');
+      for (const ns of dirs(path.join(base, host.name))) {
+        if (!ns.isDirectory()) continue;
+        for (const model of dirs(path.join(base, host.name, ns.name))) {
+          if (!model.isDirectory()) continue;
+          const dir = path.join(base, host.name, ns.name, model.name);
+          for (const tag of dirs(dir)) {
+            if (!isFile(dir, tag) || tag.name.startsWith('.')) continue;
+            let size = 0;
+            try {
+              const m = JSON.parse(fs.readFileSync(path.join(dir, tag.name), 'utf8'));
+              size = (m.layers || []).reduce((a, l) => a + (l.size || 0), 0) + (m.config?.size || 0);
+            } catch { /* */ }
+            const prefix = DEFAULT_HOSTS.includes(hostName.toLowerCase()) ? (ns.name === 'library' ? '' : ns.name + '/') : `${hostName}/${ns.name}/`;
+            const name = `${prefix}${model.name}:${tag.name}`;
+            if (!found.has(name)) found.set(name, { name, size });
+          }
         }
       }
     }
   }
-  return out.sort((a, b) => a.name.localeCompare(b.name));
+  return [...found.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 const gb = (n) => (n / 1073741824).toFixed(1) + ' GB';
 
