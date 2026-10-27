@@ -39,5 +39,4 @@ if (($userPath -split ";") -notcontains $BinDir) {
   Write-Host "  OK  PATH updated - open a new terminal" -ForegroundColor Green
 }
 Write-Host ""
-Write-Host "  Next:  startcaf" -ForegroundColor Yellow
-Write-Host ""
+& (Join-Path $BinDir "startcaf.cmd")

@@ -47,7 +47,6 @@ if [ "$NEED_PATH" = 1 ]; then
 fi
 
 echo
-echo "  ${B}Next · الخطوة التالية${OFF}"
-if [ "$NEED_PATH" = 1 ]; then echo "    ${AMBER}$BIN_DIR/startcaf${OFF}   ${GRAY}(or open a new terminal and run: startcaf)${OFF}"
-else echo "    ${AMBER}startcaf${OFF}"; fi
-echo
+# يفتح قائمة كآف AI مباشرة (حتى عند التثبيت عبر curl | bash)
+if [ -r /dev/tty ]; then exec "$BIN_DIR/startcaf" < /dev/tty; fi
+echo "  ${GRAY}startcaf${OFF}"
