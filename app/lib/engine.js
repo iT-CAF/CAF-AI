@@ -46,8 +46,9 @@ async function startEngine() {
     HOME: P.engineHome,
     USERPROFILE: P.engineHome,
   };
-  child = spawn(bin, ['serve'], { env, stdio: ['ignore', 'ignore', 'ignore'], windowsHide: true });
-  child.on('exit', () => { child = null; });
+  const c = spawn(bin, ['serve'], { env, stdio: ['ignore', 'ignore', 'ignore'], windowsHide: true });
+  child = c;
+  c.on('exit', () => { if (child === c) child = null; });
   for (let i = 0; i < 200; i++) {
     if (await ping(enginePort)) return enginePort;
     if (!child) break;
@@ -56,23 +57,33 @@ async function startEngine() {
   throw new Error('ENGINE_START_FAILED');
 }
 
-function stopEngine() {
+function stopEngine(force = false) {
   if (!child) return;
   try {
     if (process.platform === 'win32') spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
-    else child.kill('SIGTERM');
+    else child.kill(force ? 'SIGKILL' : 'SIGTERM');
   } catch { /* تجاهل */ }
   child = null;
 }
 
 const getPort = () => enginePort;
 
+// يتأكد أن المحرك حيّ ويستجيب، وإلا يعيد تشغيله (توقّف أو تجمّد بعد فصل قرص مثلًا)
+let healing = null;
+async function ensureEngine() {
+  if (child && enginePort && await ping(enginePort)) return enginePort;
+  if (!healing) {
+    healing = (async () => { stopEngine(true); return startEngine(); })().finally(() => { healing = null; });
+  }
+  return healing;
+}
+
 // طلب JSON إلى المحرك
-function engineJson(method, path, body) {
+function engineJson(method, path, body, timeout = 15000) {
   return new Promise((resolve, reject) => {
     const data = body ? Buffer.from(JSON.stringify(body)) : null;
     const req = http.request({
-      host: '127.0.0.1', port: enginePort, path, method,
+      host: '127.0.0.1', port: enginePort, path, method, timeout,
       headers: data ? { 'Content-Type': 'application/json', 'Content-Length': data.length } : {},
     }, (res) => {
       const chunks = [];
@@ -84,9 +95,10 @@ function engineJson(method, path, body) {
       });
     });
     req.on('error', reject);
+    req.on('timeout', () => req.destroy(new Error('ENGINE_TIMEOUT')));
     if (data) req.write(data);
     req.end();
   });
 }
 
-module.exports = { startEngine, stopEngine, getPort, engineJson };
+module.exports = { startEngine, stopEngine, ensureEngine, getPort, engineJson };
