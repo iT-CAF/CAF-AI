@@ -90,8 +90,8 @@ test('chat streams NDJSON with a meta line first', async () => {
 
 test('missing model gives a stable error code', async () => {
   const r = await S.api('POST', '/api/chat', { body: { model: 'nope:1b', messages: [{ role: 'user', content: 'x' }] } });
-  const lines = parseNdjson(r.text);
-  assert.equal(lines.at(-1).error, 'model_not_installed');
+  assert.equal(r.status, 400);
+  assert.equal(r.json.error, 'model_not_installed');
 });
 
 test('chat CRUD keeps v2 fields', async () => {

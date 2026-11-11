@@ -6,6 +6,8 @@ const http = require('http');
 const { P, findOllama } = require('./paths');
 
 let child = null;
+// وكيل بلا مهلة خمول: تحميل نموذج كبير قد يستغرق دقائق دون أي بايت (Node 19+ يضع 5 ثوانٍ افتراضيًا)
+const streamAgent = new http.Agent({ keepAlive: false });
 let enginePort = null;
 let engineHost = '127.0.0.1';
 
@@ -128,7 +130,7 @@ function engineStream(path, body, { onLine, signal, timeout = 0 } = {}) {
   return new Promise((resolve, reject) => {
     const data = Buffer.from(JSON.stringify(body));
     const req = http.request({
-      host: engineHost, port: enginePort, path, method: 'POST',
+      host: engineHost, port: enginePort, path, method: 'POST', agent: streamAgent,
       headers: { 'Content-Type': 'application/json', 'Content-Length': data.length },
       ...(timeout ? { timeout } : {}),
     }, (res) => {
@@ -155,7 +157,7 @@ function engineStream(path, body, { onLine, signal, timeout = 0 } = {}) {
       res.on('error', reject);
     });
     req.on('error', reject);
-    req.on('timeout', () => req.destroy(new Error('ENGINE_TIMEOUT')));
+    if (timeout) req.on('timeout', () => req.destroy(new Error('ENGINE_TIMEOUT')));
     if (signal) {
       if (signal.aborted) { req.destroy(); return reject(Object.assign(new Error('aborted'), { name: 'AbortError' })); }
       signal.addEventListener('abort', () => { req.destroy(); reject(Object.assign(new Error('aborted'), { name: 'AbortError' })); }, { once: true });
