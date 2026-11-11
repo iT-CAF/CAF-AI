@@ -163,6 +163,7 @@ test('vision: images go to vision models only, auto-routing picks one', async ()
   assert.match(lines.map((l) => l.message?.content || '').join(''), /\[images:1\]/);
   const sent = S.mock.calls.filter((c) => c.path === '/api/chat').at(-1).body;
   assert.equal(sent.messages.at(-1).images[0], png.toString('base64'));
+  assert.equal(sent.think, false, 'auto thinking is off for image questions (fast answers)');
 });
 
 test('voice is opt-in and degrades gracefully without engines', async () => {

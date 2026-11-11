@@ -140,7 +140,9 @@ function createChat(hooks = {}) {
     const extra = hooks.extraContext ? await hooks.extraContext({ body, text, settings }) : null;
     if (extra?.system) sysParts.push(extra.system);
 
-    const think = thinkValue(String(body.think ?? settings.think ?? 'auto'), caps, catalog.find(model));
+    const thinkSetting = String(body.think ?? settings.think ?? 'auto');
+    // «تلقائي» مع صورة: وصف الصور لا يحتاج تفكيرًا مطوّلًا (قد يستغرق دقائق على نماذج الرؤية)، فنطفئه ما لم يطلبه المستخدم
+    const think = route === 'vision' && thinkSetting === 'auto' && !catalog.find(model)?.thinkLevels && hasCap(caps, 'thinking') ? false : thinkValue(thinkSetting, caps, catalog.find(model));
     const payload = {
       model,
       messages: sysParts.length ? [{ role: 'system', content: sysParts.join('\n\n') }, ...messages] : messages,

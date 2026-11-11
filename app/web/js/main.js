@@ -9,7 +9,7 @@ import { renderTools, bindTools } from './pages/tools.js';
 import { renderHardware } from './pages/hardware.js';
 
 // وحدات المزايا تسجّل نفسها (تُحمَّل بعد الأساس)
-const FEATURES = ['./features/code.js', './features/vision.js', './features/docs.js', './features/images.js', './features/voice.js', './features/skills.js', './features/export.js', './features/api.js'];
+const FEATURES = ['./features/code.js', './features/vision.js', './features/docs.js', './features/images.js', './features/voice.js', './features/skills.js', './features/export.js', './features/api.js', './features/help.js'];
 
 const dark = window.matchMedia('(prefers-color-scheme: dark)');
 const effectiveTheme = () => (state.settings.theme === 'system' ? (dark.matches ? 'dark' : 'light') : state.settings.theme);
@@ -84,7 +84,7 @@ const closeSide = () => { $('sidebar').classList.remove('open'); $('scrim').clas
 function route() {
   const h = decodeURIComponent(location.hash || '');
   if (h.startsWith('#chat=')) return openChat(h.slice(6));
-  const map = { '#chat': ['ws', 'chat'], '#code': ['ws', 'code'], '#images': ['ws', 'images'], '#docs': ['ws', 'docs'], '#tools': ['view', 'tools'], '#device': ['view', 'hardware'] };
+  const map = { '#chat': ['ws', 'chat'], '#code': ['ws', 'code'], '#images': ['ws', 'images'], '#docs': ['ws', 'docs'], '#tools': ['view', 'tools'], '#device': ['view', 'hardware'], '#skills': ['view', 'skills'], '#help': ['view', 'help'] };
   if (h === '#settings') return openSettings();
   const m = map[h];
   if (m) { if (m[0] === 'ws') setWorkspace(m[1]); else setView(m[1]); }
