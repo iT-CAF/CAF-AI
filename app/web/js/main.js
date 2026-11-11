@@ -1,6 +1,6 @@
 /* CAF AI · © 2026 كآف · iT CAF — جميع الحقوق محفوظة. */
 // نقطة البداية: التهيئة، مساحات العمل والصفحات، المظهر واللغة، الاختصارات.
-import { state, $, qsa, t, esc, api, on, emit, toast } from './core.js';
+import { state, $, qsa, t, esc, api, on, emit, toast, iconUrl, pages } from './core.js';
 import { loadChats, newChat, openChat, renderChatList, renderMessages, bindChat } from './chat.js';
 import { loadModels, renderModelSelect, bindModels, updateThink } from './models.js';
 import { bindComposer } from './composer.js';
@@ -9,12 +9,12 @@ import { renderTools, bindTools } from './pages/tools.js';
 import { renderHardware } from './pages/hardware.js';
 
 // وحدات المزايا تسجّل نفسها (تُحمَّل بعد الأساس)
-const FEATURES = ['./features/code.js', './features/vision.js'];
+const FEATURES = ['./features/code.js', './features/vision.js', './features/skills.js'];
 
 const dark = window.matchMedia('(prefers-color-scheme: dark)');
 const effectiveTheme = () => (state.settings.theme === 'system' ? (dark.matches ? 'dark' : 'light') : state.settings.theme);
 // صفحات تُرسم عند فتحها؛ الوحدات تضيف صفحاتها هنا
-export const pages = { tools: renderTools, hardware: renderHardware };
+Object.assign(pages, { tools: renderTools, hardware: renderHardware });
 const VIEW_OF_WS = { chat: 'chat', code: 'chat', images: 'images', docs: 'docs' };
 
 function applyLang() {
@@ -22,7 +22,7 @@ function applyLang() {
   const th = effectiveTheme();
   const html = document.documentElement;
   html.lang = lang; html.dir = lang === 'ar' ? 'rtl' : 'ltr'; html.dataset.theme = th;
-  $('themeIc').style.setProperty('--i', `url(/brand/icons/${th === 'dark' ? 'sun' : 'moon'}.svg)`);
+  $('themeIc').style.setProperty('--i', `url(${iconUrl(th === 'dark' ? 'sun' : 'moon')})`);
   $('themeBtn').title = th === 'dark' ? t('light') : t('dark');
   $('langLbl').textContent = lang === 'ar' ? 'EN' : 'ع';
   qsa('[data-i18n]').forEach((e) => { e.textContent = t(e.dataset.i18n); });
@@ -48,7 +48,7 @@ function renderSuggest() {
 }
 function renderWsTitle() {
   const el = $('wsTitle'); if (!el) return;
-  const k = state.view === 'chat' ? (state.workspace === 'code' ? 'wsCode' : 'wsChat') : { images: 'wsImages', docs: 'wsDocs', tools: 'installedTools', hardware: 'myDevice' }[state.view];
+  const k = state.view === 'chat' ? (state.workspace === 'code' ? 'wsCode' : 'wsChat') : { images: 'wsImages', docs: 'wsDocs', tools: 'installedTools', hardware: 'myDevice', skills: 'skills', help: 'help' }[state.view];
   el.textContent = t(k || 'wsChat');
 }
 

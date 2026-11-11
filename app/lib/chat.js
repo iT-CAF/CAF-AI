@@ -9,6 +9,7 @@ const catalog = require('./catalog');
 const hardware = require('./hardware');
 const { detectIntent, pickModel } = require('./autoroute');
 const log = require('./log');
+const skills = require('./skills');
 
 const CODE_PROMPT_AR = [
   'أنت مساعد برمجة خبير داخل «كآف AI». أجب بلغة المستخدم (العربية افتراضيًا) واكتب الكود دائمًا داخل كتل ``` مع اسم اللغة.',
@@ -129,11 +130,15 @@ function createChat(hooks = {}) {
     const userSys = String(body.systemPrompt ?? settings.systemPrompt ?? '').trim();
     if (route === 'code' || body.workspace === 'code') sysParts.push(String(settings.codeSystemPrompt || '').trim() || CODE_PROMPT_AR);
     if (userSys) sysParts.push(userSys);
+    const numCtx = parseInt(body.numCtx ?? settings.numCtx, 10);
+    // المهارات: يدويًا من الواجهة (body.skills) أو تلقائيًا حسب الطلب
+    const sk = skills.select({ text, explicit: body.skills, workspace: body.workspace === 'code' || route === 'code' ? 'code' : (body.workspace || 'chat') });
+    const skPrompt = skills.promptFor(sk.list, { numCtx, lang: lang || settings.lang });
+    if (skPrompt) sysParts.push(skPrompt);
     const extra = hooks.extraContext ? await hooks.extraContext({ body, text, settings }) : null;
     if (extra?.system) sysParts.push(extra.system);
 
     const think = thinkValue(String(body.think ?? settings.think ?? 'auto'), caps, catalog.find(model));
-    const numCtx = parseInt(body.numCtx ?? settings.numCtx, 10);
     const payload = {
       model,
       messages: sysParts.length ? [{ role: 'system', content: sysParts.join('\n\n') }, ...messages] : messages,
@@ -142,7 +147,7 @@ function createChat(hooks = {}) {
     if (think !== undefined) payload.think = think;
     return {
       payload,
-      meta: { model, route, auto, reason: intent.reason, why, think: think ?? null, caps, lang, ...(extra?.meta || {}) },
+      meta: { model, route, auto, reason: intent.reason, why, think: think ?? null, caps, lang, skills: sk.list.map((x) => ({ id: x.id, name: (lang || settings.lang) === 'en' ? x.nameEn : x.nameAr, emoji: x.emoji, auto: sk.auto })), ...(extra?.meta || {}) },
     };
   }
 

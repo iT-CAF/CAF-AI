@@ -2,6 +2,7 @@
 // النماذج: القائمة العلوية (تلقائي + المثبّتة)، التفكير، التنزيل مع تحذير الرام.
 import { state, $, t, esc, api, readNdjson, authHeaders, errText, toast, emit, on, confirmBox } from './core.js';
 import { downloads } from './downloads.js';
+import { slashCommands, slashProviders, setInput } from './composer.js';
 
 const capTags = (m) => {
   const c = m.capabilities || []; const tags = [];
@@ -102,4 +103,7 @@ export function bindModels() {
   $('thinkSelect').onchange = async (e) => { state.settings = await api('PUT', '/api/settings', { think: e.target.value }); };
   on('model:select', async (name) => { $('modelSelect').value = name; state.settings = await api('PUT', '/api/settings', { model: name }); updateThink(); });
   on('model:pull', (name) => pullModel(name));
+  // /model: اختيار نموذج من قائمة «/»
+  slashCommands.push({ cmd: 'model', icon: 'chip', label: () => t('model'), run: (rest) => { const m = state.models.find((x) => x.name === rest.trim()); if (m) emit('model:select', m.name); else $('modelSelect').focus(); return true; } });
+  slashProviders.push((q) => (q.startsWith('model') || q.startsWith('m') ? [{ id: 'auto', name: 'auto' }, ...chatModels()] : []).slice(0, 12).map((m) => ({ id: 'model:' + m.name, group: t('model'), icon: 'chip', label: m.name === 'auto' ? t('autoModel') : m.name, hint: m.name === 'auto' ? '' : capTags(m).join(' · '), pick: () => { setInput(''); emit('model:select', m.name); } })));
 }

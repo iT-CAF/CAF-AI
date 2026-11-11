@@ -16,42 +16,48 @@
   <aside class="sidebar" id="sidebar" aria-label="sidebar">
     <div class="brand">
       <a href="https://it-caf.com/" target="_blank" rel="noopener noreferrer" aria-label="iT CAF · it-caf.com">
-        <img class="logo logo-dark" src="/brand/itcaf-horizontal-on-graphite.svg" alt="iT CAF · كآف">
-        <img class="logo logo-light" src="/brand/itcaf-horizontal-on-bone.svg" alt="iT CAF · كآف">
+        <img class="logo logo-dark" src="/brand/itcaf-horizontal-on-graphite-anim.svg" alt="iT CAF · كآف">
+        <img class="logo logo-light" src="/brand/itcaf-horizontal-on-bone-anim.svg" alt="iT CAF · كآف">
       </a>
     </div>
     <nav class="workspaces" id="workspaces" role="tablist" data-i18n-title="workspaces">
-      <button role="tab" data-ws="chat" aria-selected="true"><span class="ic" style="--i:url(/brand/icons/chat.svg)"></span><span data-i18n="wsChat"></span></button>
-      <button role="tab" data-ws="code" aria-selected="false" tabindex="-1"><span class="ic" style="--i:url(/brand/icons/code.svg)"></span><span data-i18n="wsCode"></span></button>
-      <button role="tab" data-ws="images" aria-selected="false" tabindex="-1"><span class="ic" style="--i:url(/brand/icons/image.svg)"></span><span data-i18n="wsImages"></span></button>
-      <button role="tab" data-ws="docs" aria-selected="false" tabindex="-1"><span class="ic" style="--i:url(/brand/icons/book.svg)"></span><span data-i18n="wsDocs"></span></button>
+      <button role="tab" data-ws="chat" aria-selected="true"><span class="ic" style="--i:url(/brand/icons/ui/message-square.svg)"></span><span data-i18n="wsChat"></span></button>
+      <button role="tab" data-ws="code" aria-selected="false" tabindex="-1"><span class="ic" style="--i:url(/brand/icons/ui/code-xml.svg)"></span><span data-i18n="wsCode"></span></button>
+      <button role="tab" data-ws="images" aria-selected="false" tabindex="-1"><span class="ic" style="--i:url(/brand/icons/ui/image.svg)"></span><span data-i18n="wsImages"></span></button>
+      <button role="tab" data-ws="docs" aria-selected="false" tabindex="-1"><span class="ic" style="--i:url(/brand/icons/ui/book-open.svg)"></span><span data-i18n="wsDocs"></span></button>
     </nav>
     <div class="side-actions">
-      <button class="btn primary block" id="newChat"><span class="ic" style="--i:url(/brand/icons/plus.svg)"></span><span data-i18n="newChat"></span><kbd data-mod>⌘K</kbd></button>
-      <label class="search"><span class="ic" style="--i:url(/brand/icons/search.svg)"></span><input id="search" type="search" data-i18n-ph="search" autocomplete="off" data-i18n-title="search"></label>
+      <button class="btn primary block" id="newChat"><span class="ic" style="--i:url(/brand/icons/ui/plus.svg)"></span><span data-i18n="newChat"></span><kbd data-mod>⌘K</kbd></button>
+      <label class="search"><span class="ic" style="--i:url(/brand/icons/ui/search.svg)"></span><input id="search" type="search" data-i18n-ph="search" autocomplete="off" data-i18n-title="search"></label>
     </div>
     <nav class="chat-list" id="chatList" data-i18n-title="chats"></nav>
     <div class="side-foot">
-      <button class="btn ghost block" data-goto="tools"><span class="ic" style="--i:url(/brand/icons/box.svg)"></span><span data-i18n="installedTools"></span></button>
-      <button class="btn ghost block" data-goto="hardware"><span class="ic" style="--i:url(/brand/icons/device.svg)"></span><span data-i18n="myDevice"></span></button>
-      <button class="btn ghost block" id="openSettings"><span class="ic" style="--i:url(/brand/icons/sliders.svg)"></span><span data-i18n="settings"></span><kbd data-mod>⌘,</kbd></button>
-      <p class="rights"><span id="rightsShort"></span><br><a href="https://it-caf.com/" target="_blank" rel="noopener noreferrer">it-caf.com</a> · <a href="https://github.com/iT-CAF/CAF-AI" target="_blank" rel="noopener noreferrer">GitHub</a></p>
+      <button class="btn ghost block" data-goto="tools"><span class="ic" style="--i:url(/brand/icons/ui/box.svg)"></span><span data-i18n="installedTools"></span></button>
+      <button class="btn ghost block" data-goto="hardware"><span class="ic" style="--i:url(/brand/icons/ui/laptop.svg)"></span><span data-i18n="myDevice"></span></button>
+      <button class="btn ghost block" id="openSettings"><span class="ic" style="--i:url(/brand/icons/ui/settings-2.svg)"></span><span data-i18n="settings"></span><kbd data-mod>⌘,</kbd></button>
+      <div class="brandline">
+        <div class="link-row">
+          <a class="link-chip" href="https://it-caf.com/" target="_blank" rel="noopener noreferrer"><span class="ic" style="--i:url(/brand/icons/ui/globe.svg)"></span><span>it-caf.com</span></a>
+          <a class="link-chip" href="https://github.com/iT-CAF/CAF-AI" target="_blank" rel="noopener noreferrer"><span class="ic" style="--i:url(/brand/icons/ui/github.svg)"></span><span>GitHub</span></a>
+        </div>
+        <p class="rights" id="rightsShort"></p>
+      </div>
     </div>
   </aside>
   <div class="scrim" id="scrim"></div>
 
   <main class="main" id="main">
     <header class="topbar">
-      <button class="btn icon-only mobile-only" id="toggleSide" data-i18n-title="menu"><span class="ic" style="--i:url(/brand/icons/menu.svg)"></span></button>
+      <button class="btn icon-only mobile-only" id="toggleSide" data-i18n-title="menu"><span class="ic" style="--i:url(/brand/icons/ui/menu.svg)"></span></button>
       <h1 class="ws-title" id="wsTitle"></h1>
       <div class="chat-tools" id="chatTools">
         <div class="model-pill">
           <span class="status" id="status"></span>
-          <span class="ic" style="--i:url(/brand/icons/chip.svg)"></span>
+          <span class="ic" style="--i:url(/brand/icons/ui/cpu.svg)"></span>
           <select id="modelSelect" data-i18n-title="model"></select>
         </div>
         <label class="think-pill hidden" id="thinkWrap" data-i18n-title="thinkMode">
-          <span class="ic" style="--i:url(/brand/icons/bulb.svg)"></span>
+          <span class="ic" style="--i:url(/brand/icons/ui/brain.svg)"></span>
           <select id="thinkSelect" data-i18n-title="thinkMode">
             <option value="auto" data-i18n="think_auto"></option><option value="on" data-i18n="think_on"></option><option value="off" data-i18n="thinkOff"></option>
             <option value="low" data-i18n="think_low"></option><option value="medium" data-i18n="think_medium"></option><option value="high" data-i18n="think_high"></option>
@@ -61,8 +67,8 @@
       </div>
       <div class="spacer"></div>
       <span id="topActions" class="top-actions"></span>
-      <button class="btn icon-only lang-btn" id="langBtn" data-i18n-title="language"><span class="ic" style="--i:url(/brand/icons/globe.svg)"></span><b id="langLbl">EN</b></button>
-      <button class="btn icon-only" id="themeBtn" data-i18n-title="theme"><span class="ic" id="themeIc" style="--i:url(/brand/icons/sun.svg)"></span></button>
+      <button class="btn icon-only lang-btn" id="langBtn" data-i18n-title="language"><span class="ic" style="--i:url(/brand/icons/ui/globe.svg)"></span><b id="langLbl">EN</b></button>
+      <button class="btn icon-only" id="themeBtn" data-i18n-title="theme"><span class="ic" id="themeIc" style="--i:url(/brand/icons/ui/sun.svg)"></span></button>
     </header>
 
     <div class="views">
@@ -75,12 +81,12 @@
               <p class="lead" id="welcomeSub"></p>
               <p class="prompt-line" aria-hidden="true"><span class="gt">&gt;</span> <span id="promptLine"></span><span class="cursor"></span></p>
               <ul class="badges">
-                <li><span class="ic" style="--i:url(/brand/icons/lock.svg)"></span><span data-i18n="b1"></span></li>
-                <li><span class="ic" style="--i:url(/brand/icons/shield.svg)"></span><span data-i18n="b2"></span></li>
-                <li><span class="ic" style="--i:url(/brand/icons/server.svg)"></span><span data-i18n="b3"></span></li>
+                <li><span class="ic" style="--i:url(/brand/icons/ui/lock.svg)"></span><span data-i18n="b1"></span></li>
+                <li><span class="ic" style="--i:url(/brand/icons/ui/shield-check.svg)"></span><span data-i18n="b2"></span></li>
+                <li><span class="ic" style="--i:url(/brand/icons/ui/server.svg)"></span><span data-i18n="b3"></span></li>
               </ul>
               <div class="first-run hidden" id="firstRun" role="status">
-                <span class="ic" style="--i:url(/brand/icons/download.svg)"></span>
+                <span class="ic" style="--i:url(/brand/icons/ui/download.svg)"></span>
                 <div><b data-i18n="firstRunTitle"></b><p data-i18n="firstRunSub"></p></div>
                 <button class="btn primary" data-goto="hardware" data-i18n="firstRunBtn"></button>
               </div>
@@ -88,7 +94,7 @@
             </div>
             <div class="msgs" id="msgs"></div>
           </section>
-          <button class="to-bottom hidden" id="toBottom" data-i18n-title="toBottom"><span class="ic" style="--i:url(/brand/icons/down.svg)"></span></button>
+          <button class="to-bottom hidden" id="toBottom" data-i18n-title="toBottom"><span class="ic" style="--i:url(/brand/icons/ui/arrow-down.svg)"></span></button>
 
           <footer class="composer-wrap">
             <div class="quick" id="quick" hidden></div>
@@ -99,7 +105,7 @@
                 <span id="composerLeft" class="composer-left"></span>
                 <textarea id="input" rows="1" data-i18n-ph="placeholder" dir="auto" data-i18n-title="message"></textarea>
                 <span id="composerRight" class="composer-right"></span>
-                <button class="btn primary send" id="send" data-i18n-title="send"><span class="ic" style="--i:url(/brand/icons/up.svg)"></span></button>
+                <button class="btn primary send" id="send" data-i18n-title="send"><span class="ic" style="--i:url(/brand/icons/ui/arrow-up.svg)"></span></button>
                 <button class="btn stop hidden" id="stop" data-i18n-title="stop"><span class="sq"></span></button>
               </div>
             </div>
@@ -118,7 +124,7 @@
 
 <dialog id="settingsDlg" aria-labelledby="dlgTitle">
   <form method="dialog" class="dlg">
-    <header><h2 id="dlgTitle" data-i18n="settings" tabindex="-1" autofocus></h2><button class="btn icon-only" value="close" data-i18n-title="close"><span class="ic" style="--i:url(/brand/icons/close.svg)"></span></button></header>
+    <header><h2 id="dlgTitle" data-i18n="settings" tabindex="-1" autofocus></h2><button class="btn icon-only" value="close" data-i18n-title="close"><span class="ic" style="--i:url(/brand/icons/ui/x.svg)"></span></button></header>
     <div class="dlg-body" id="settingsBody"></div>
   </form>
 </dialog>

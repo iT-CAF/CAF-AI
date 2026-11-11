@@ -82,26 +82,49 @@ const cv = { doc: null, view: null, langC: null, diffC: null, wrapC: null, diff:
 
 function canvasHtml() {
   return `<header class="cv-head">
-    <input class="cv-name" id="cvName" dir="ltr" aria-label="${esc(t('fileName'))}" spellcheck="false">
-    <select id="cvLang" aria-label="${esc(t('language'))}">${LANGS.map((l) => `<option>${l}</option>`).join('')}</select>
-    <select id="cvVer" aria-label="${esc(t('versions'))}"></select>
-    <span class="cv-dirty hidden" id="cvDirty">● ${esc(t('unsaved'))}</span>
-    <span class="spacer"></span>
-    <button class="mini" id="cvDiff" title="${esc(t('showDiff'))}" aria-pressed="false">${ic('diff')}</button>
-    <button class="mini" id="cvRun" title="${esc(t('run'))}">${ic('play')}</button>
-    <button class="mini" id="cvWrap" title="${esc(t('wrapLines'))}" aria-pressed="false">${ic('wrap')}</button>
-    <button class="mini" id="cvSave" title="${esc(t('saveVersion'))} (⌘S)">${ic('check')}</button>
-    <button class="mini" id="cvCopy" title="${esc(t('copy'))}">${ic('copy')}</button>
-    <button class="mini" id="cvDl" title="${esc(t('downloadFile'))}">${ic('download')}</button>
-    <button class="mini" id="cvClose" title="${esc(t('closeCanvas'))}">${ic('close')}</button>
+    <div class="cv-row">
+      <span class="cv-file">${ic('filecode')}<input class="cv-name" id="cvName" dir="ltr" aria-label="${esc(t('fileName'))}" spellcheck="false"><span class="cv-dirty hidden" id="cvDirty" title="${esc(t('unsaved'))}">●</span></span>
+      <span class="cv-writing hidden" id="cvWriting"><i class="spin"></i><span>${esc(t('writingNow'))}</span></span>
+      <span class="spacer"></span>
+      <button class="mini" id="cvMax" title="${esc(t('fullWidth'))}" aria-pressed="false">${ic('maximize')}</button>
+      <button class="mini" id="cvClose" title="${esc(t('closeCanvas'))}" aria-label="${esc(t('closeCanvas'))}">${ic('close')}</button>
+    </div>
+    <div class="cv-row cv-row2">
+      <div class="cv-tabs" role="tablist" aria-label="${esc(t('canvas'))}">
+        <button type="button" role="tab" data-cvtab="preview" id="cvTabRun" aria-selected="false"></button>
+        <button type="button" role="tab" data-cvtab="code" aria-selected="true">${ic('code')}<span>${esc(t('codeTab'))}</span></button>
+      </div>
+      <span class="spacer"></span>
+      <select id="cvLang" aria-label="${esc(t('language'))}">${LANGS.map((l) => `<option>${l}</option>`).join('')}</select>
+      <select id="cvVer" aria-label="${esc(t('versions'))}"></select>
+      <button class="mini" id="cvDiff" title="${esc(t('showDiff'))}" aria-pressed="false">${ic('diff')}</button>
+      <button class="mini" id="cvWrap" title="${esc(t('wrapLines'))}" aria-pressed="false">${ic('wrap')}</button>
+      <button class="mini" id="cvSave" title="${esc(t('saveVersion'))} (⌘S)">${ic('save')}</button>
+      <button class="mini" id="cvCopy" title="${esc(t('copy'))}">${ic('copy')}</button>
+      <button class="mini" id="cvDl" title="${esc(t('downloadFile'))}">${ic('download')}</button>
+    </div>
   </header>
   <div class="cv-body"><div class="cv-editor" id="cvEditor" dir="ltr"></div>
-    <section class="cv-out hidden" id="cvOut" aria-live="polite"><div class="cv-out-head"><b id="cvOutTitle">${esc(t('output'))}</b><span class="muted small" id="cvOutMeta"></span><span class="spacer"></span><button class="mini" id="cvOutClear">${esc(t('clear'))}</button><button class="mini" id="cvOutClose" aria-label="${esc(t('close'))}">${ic('close')}</button></div><div class="cv-out-body" id="cvOutBody"></div></section>
+    <section class="cv-out" id="cvOut" aria-live="polite"><div class="cv-out-head"><b id="cvOutTitle">${esc(t('output'))}</b><span class="muted small" id="cvOutMeta"></span><span class="spacer"></span><button class="mini" id="cvOutClear">${esc(t('clear'))}</button></div><div class="cv-out-body" id="cvOutBody"></div></section>
   </div>
   <footer class="cv-ask"><span class="cv-sel muted small" id="cvSel">${esc(t('selWhole'))}</span><input id="cvAsk" dir="auto" placeholder="${esc(t('askEdit'))}"><button class="btn small primary" id="cvAskBtn">${ic('wand')}<span>${esc(t('applyEdit'))}</span></button></footer>`;
 }
 
-async function openCanvas({ content = '', lang = 'text', name = '', id = null } = {}) {
+// تبويبا اللوحة: «المعاينة/التشغيل» و«الكود» في مساحة واحدة بدل نافذتين
+function runKind() { return LANG_KIND(cv.doc?.lang || '') || LANG_KIND((cv.doc?.name || '').split('.').pop()); }
+function updateRunTab() {
+  const k = runKind(); const b = $('cvTabRun');
+  b.hidden = !k;
+  b.innerHTML = k === 'html' ? `${ic('eye')}<span>${esc(t('previewTab'))}</span>` : `${ic('play')}<span>${esc(t('outputTab'))}</span>`;
+}
+function setTab(tab, { run = true } = {}) {
+  const box = $('canvas'); box.dataset.tab = tab;
+  box.querySelectorAll('[data-cvtab]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.cvtab === tab)));
+  if (tab === 'preview' && run) runCanvas();
+  if (tab === 'code') cv.view?.focus();
+}
+
+async function openCanvas({ content = '', lang = 'text', name = '', id = null, stream = false } = {}) {
   const C = await cm();
   const box = $('canvas');
   if (!box.dataset.ready) { box.innerHTML = canvasHtml(); box.dataset.ready = '1'; bindCanvas(); }
@@ -111,11 +134,11 @@ async function openCanvas({ content = '', lang = 'text', name = '', id = null } 
   }
   if (!cv.doc || !id) {
     cv.doc = { id: uid(), chatId: state.chat?.id || null, name: name || `caf-code.${EXT[lang] || 'txt'}`, lang, versions: [{ content, note: 'v1', at: Date.now() }] };
-    await saveDoc();
+    if (!stream) await saveDoc();
   }
   const cur = cv.doc.versions[cv.doc.versions.length - 1].content;
   $('cvName').value = cv.doc.name; $('cvLang').value = LANGS.includes(cv.doc.lang) ? cv.doc.lang : 'text';
-  renderVersions();
+  renderVersions(); updateRunTab();
   cv.langC = new C.Compartment(); cv.diffC = new C.Compartment(); cv.wrapC = new C.Compartment();
   cv.view?.destroy();
   cv.view = new C.EditorView({
@@ -128,11 +151,30 @@ async function openCanvas({ content = '', lang = 'text', name = '', id = null } 
         C.EditorView.contentAttributes.of({ 'aria-label': t('canvas') })],
     }),
   });
-  cv.diff = false; setDirty(false); showSel(); closeOut();
-  cv.view.focus();
+  cv.diff = false; setDirty(false); showSel();
+  cv.streaming = stream; $('cvWriting').classList.toggle('hidden', !stream);
+  setTab('code', { run: false });
+  if (!stream) cv.view.focus();
+}
+
+// «وضع المحاكي»: الكود يُكتب حيًا داخل اللوحة أثناء توليده، ثم تُعرض المعاينة عند الانتهاء
+function streamInto(code) {
+  if (!cv.view) return;
+  cv.busy = true;
+  cv.view.dispatch({ changes: { from: 0, to: cv.view.state.doc.length, insert: code }, scrollIntoView: true, selection: { anchor: code.length } });
+  cv.busy = false;
+  cv.doc.versions[cv.doc.versions.length - 1].content = code;
+}
+async function endStream(code) {
+  if (!cv.streaming) return;
+  cv.streaming = false; $('cvWriting').classList.add('hidden');
+  streamInto(code);
+  setDirty(false);
+  await saveDoc();
+  setTab('preview');
 }
 function langExt(C, l) { const f = C.languages[l]; try { return f ? f() : []; } catch { return []; } }
-function closeCanvas() { $('canvas').classList.add('hidden'); document.body.classList.remove('canvas-open'); cv.preview?.destroy(); cv.preview = null; }
+function closeCanvas() { $('canvas').classList.add('hidden'); document.body.classList.remove('canvas-open', 'cv-max'); cv.preview?.destroy(); cv.preview = null; cv.streaming = false; }
 const curText = () => cv.view?.state.doc.toString() || '';
 function setDirty(v) { cv.dirty = v; $('cvDirty')?.classList.toggle('hidden', !v); }
 function showSel() {
@@ -169,9 +211,9 @@ async function toggleDiff(force) {
 
 // ---------- المخرجات والمعاينة ----------
 const EXTERNAL_RE = /(src|href)\s*=\s*["']\s*(https?:)?\/\/|@import\s+url\(\s*["']?https?:|url\(\s*["']?https?:/i;
-const DEVICES = [['desktop', '100%', 'device'], ['tablet', '820px', 'panel'], ['mobile', '390px', 'chip']];
-function openOut(title, meta = '') { $('cvOut').classList.remove('hidden'); $('cvOutTitle').textContent = title; $('cvOutMeta').textContent = meta; }
-function closeOut() { $('cvOut')?.classList.add('hidden'); $('canvas')?.classList.remove('preview-max'); cv.preview?.destroy(); cv.preview = null; }
+const DEVICES = [['desktop', '100%', 'desktop'], ['tablet', '820px', 'tablet'], ['mobile', '390px', 'mobile']];
+function openOut(title, meta = '') { setTab('preview', { run: false }); $('cvOutTitle').textContent = title; $('cvOutMeta').textContent = meta; }
+function closeOut() { cv.preview?.destroy(); cv.preview = null; }
 function outLine(box, l) { const d = document.createElement('div'); d.className = 'ol ol-' + l.type; d.textContent = l.text; box.appendChild(d); box.scrollTop = box.scrollHeight; }
 const statusPill = (state, text) => `<span class="run-status st-${state}">${state === 'running' ? '<i class="spin"></i>' : state === 'ok' ? ic('check') : ic('alert')}<span>${esc(text)}</span></span>`;
 
@@ -198,7 +240,7 @@ function previewUi(body, code) {
     const a = e.target.closest('[data-pv]'); if (!a) return;
     if (a.dataset.pv === 'reload') { con.innerHTML = ''; n = 0; count.textContent = '0'; count.classList.remove('has-err'); cv.preview.update(curText()); }
     if (a.dataset.pv === 'console') { const on = a.getAttribute('aria-pressed') !== 'true'; a.setAttribute('aria-pressed', String(on)); con.classList.toggle('hidden', !on); }
-    if (a.dataset.pv === 'max') { const on = a.getAttribute('aria-pressed') !== 'true'; a.setAttribute('aria-pressed', String(on)); $('canvas').classList.toggle('preview-max', on); }
+    if (a.dataset.pv === 'max') $('cvMax').click();
   };
 }
 
@@ -253,13 +295,13 @@ function bindCanvas() {
   $('cvSave').onclick = () => saveVersion().then(() => toast(t('saved')));
   $('cvCopy').onclick = async () => { await navigator.clipboard.writeText(curText()); toast(t('copied')); };
   $('cvDl').onclick = () => download(new Blob([curText()], { type: 'text/plain;charset=utf-8' }), cv.doc.name || 'caf-code.txt');
-  $('cvRun').onclick = runCanvas;
+  $('canvas').querySelector('.cv-tabs').onclick = (e) => { const b = e.target.closest('[data-cvtab]'); if (b) setTab(b.dataset.cvtab); };
+  $('cvMax').onclick = () => { const on = !document.body.classList.contains('cv-max'); document.body.classList.toggle('cv-max', on); $('cvMax').setAttribute('aria-pressed', String(on)); $('cvMax').innerHTML = ic(on ? 'minimize' : 'maximize'); };
   $('cvDiff').onclick = () => toggleDiff();
   $('cvWrap').onclick = async () => { const C = await cm(); const on = $('cvWrap').getAttribute('aria-pressed') !== 'true'; cv.view.dispatch({ effects: cv.wrapC.reconfigure(on ? C.EditorView.lineWrapping : []) }); $('cvWrap').setAttribute('aria-pressed', String(on)); };
-  $('cvOutClose').onclick = closeOut;
   $('cvOutClear').onclick = () => { if (!$('cvOutBody').classList.contains('is-preview')) $('cvOutBody').innerHTML = ''; };
   $('cvName').onchange = (e) => { cv.doc.name = e.target.value.trim().slice(0, 200) || cv.doc.name; const l = langOf(cv.doc.name); if (LANGS.includes(l)) { $('cvLang').value = l; $('cvLang').onchange(); } saveDoc(); };
-  $('cvLang').onchange = async () => { const C = await cm(); cv.doc.lang = $('cvLang').value; cv.view.dispatch({ effects: cv.langC.reconfigure(langExt(C, cv.doc.lang)) }); saveDoc(); };
+  $('cvLang').onchange = async () => { const C = await cm(); cv.doc.lang = $('cvLang').value; cv.view.dispatch({ effects: cv.langC.reconfigure(langExt(C, cv.doc.lang)) }); updateRunTab(); saveDoc(); };
   $('cvVer').onchange = () => { const v = cv.doc.versions[+$('cvVer').value]; if (!v) return; setContent(v.content); setDirty(false); if (cv.diff) toggleDiff(true); };
   $('cvAskBtn').onclick = askEdit;
   $('cvAsk').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); askEdit(); } });
@@ -267,12 +309,31 @@ function bindCanvas() {
 
 // ---------------- أفعال كتل الكود داخل الرسائل ----------------
 function blockInfo(btn) {
-  const box = btn.closest('.codeblock');
+  const art = btn.closest('.artifact');
+  const box = art ? art.querySelector('.codeblock') : btn.closest('.codeblock');
   const code = box.querySelector('pre.src code').textContent;
   const lang = box.dataset.lang || '';
-  const before = box.previousElementSibling ? box.previousElementSibling.textContent : '';
-  return { box, code, lang, name: guessFileName(code, lang, before) };
+  const before = (art || box).previousElementSibling ? (art || box).previousElementSibling.textContent : '';
+  return { box, art, code, lang, name: art ? art.querySelector('.art-meta b').textContent : guessFileName(code, lang, before) };
 }
+
+// معاينة داخل كتلة الكود نفسها (تبويب «المعاينة») — بلا نافذة ثانية
+function inlinePreview(btn) {
+  const box = btn.closest('.codeblock');
+  box.querySelectorAll('[data-cbtab]').forEach((b) => b.setAttribute('aria-selected', String(b === btn)));
+  let pv = box.querySelector('.cb-preview');
+  pv?.__p?.destroy(); pv?.remove();
+  if (btn.dataset.cbtab !== 'preview') { box.classList.remove('show-preview'); return; }
+  const code = box.querySelector('pre.src code').textContent;
+  pv = document.createElement('div'); pv.className = 'cb-preview';
+  pv.innerHTML = `<div class="cb-pv-bar"><span class="run-status st-ok">${ic('shield')}<span>${esc(t('sandboxed'))}</span></span><span class="spacer"></span><button type="button" class="mini" data-cbreload title="${esc(t('reload'))}">${ic('refresh')}</button><button type="button" class="mini" data-cbexpand title="${esc(t('openCanvas'))}">${ic('maximize')}</button></div>${EXTERNAL_RE.test(code) ? `<p class="pv-note">${ic('alert')}${esc(t('externalBlocked'))}</p>` : ''}<div class="cb-frame"></div><div class="preview-console hidden"></div>`;
+  box.appendChild(pv); box.classList.add('show-preview');
+  const con = pv.querySelector('.preview-console');
+  pv.__p = mountPreview(pv.querySelector('.cb-frame'), code, { onConsole: (l) => { con.classList.remove('hidden'); outLine(con, l); } });
+  pv.querySelector('[data-cbreload]').onclick = () => { con.innerHTML = ''; con.classList.add('hidden'); pv.__p.update(code); };
+  pv.querySelector('[data-cbexpand]').onclick = () => { const b = blockInfo(btn); openCanvas({ content: b.code, lang: 'html', name: b.name }).then(() => setTab('preview')); };
+}
+
 async function runInline(btn) {
   const { box, code, lang, name } = blockInfo(btn);
   const kind = LANG_KIND(lang);
@@ -291,7 +352,35 @@ async function runInline(btn) {
 }
 
 // معاينة تلقائية: ردّ في مساحة الكود يحوي صفحة HTML كاملة يُفتح في اللوحة الجانبية مباشرة
+// ---------- وضع المحاكي: كتابة الصفحة حيًا في اللوحة ----------
+const HTML_FENCE = /```(html|htm|svg)[^\n]*\n([\s\S]*?)(```|$)/gi;
+let streamMsg = null; let opening = null; let latest = '';
+function lastHtmlBlock(content) {
+  let m; let last = null; HTML_FENCE.lastIndex = 0;
+  while ((m = HTML_FENCE.exec(content))) last = { lang: m[1].toLowerCase(), code: m[2], done: m[3] === '```' };
+  return last;
+}
+function onStream({ msg, content }) {
+  if (state.workspace !== 'code' || !msg) return;
+  const b = lastHtmlBlock(content);
+  if (!b || b.code.split('\n').length < 4) return;
+  latest = b.code;
+  if (streamMsg !== msg) {
+    streamMsg = msg;
+    const nameM = /(?:الملف|File)\s*[:：]\s*\**\s*`?([\w.-]+\.(?:html?|svg))`?/i.exec(content);
+    opening = openCanvas({ content: latest, lang: b.lang === 'svg' ? 'xml' : 'html', name: nameM ? nameM[1] : (b.lang === 'svg' ? 'image.svg' : 'index.html'), stream: true }).then(() => { opening = null; streamInto(latest); });
+    return;
+  }
+  if (!opening && cv.streaming) streamInto(latest);
+}
+
 function autoPreview(msg) {
+  if (msg && streamMsg === msg) {
+    streamMsg = null;
+    const b = lastHtmlBlock(msg.content || '');
+    Promise.resolve(opening).then(() => endStream(b ? b.code.replace(/\n$/, '') : latest));
+    return;
+  }
   if (state.workspace !== 'code' || !msg?.content) return;
   const blocks = [...msg.content.matchAll(/```(html|htm)?\s*\n([\s\S]*?)```/gi)].map((m) => m[2]).filter((c) => /<!DOCTYPE html|<html[\s>]|<body[\s>]/i.test(c));
   if (!blocks.length) return;
@@ -388,9 +477,11 @@ export function init() {
   window.I18N_ADD({
     ar: { cannotRun: 'التشغيل المباشر متاح لـ JavaScript وPython وHTML فقط.', dev_desktop: 'سطح المكتب', dev_tablet: 'تابلت', dev_mobile: 'جوال', reload: 'إعادة التحميل', fullPreview: 'معاينة بالمساحة كاملة',
       console: 'Console', externalBlocked: 'هذه الصفحة تطلب ملفات من الإنترنت (CDN أو صور خارجية). المعاينة معزولة وبلا شبكة، لذلك قد تظهر بدون تنسيقها. اطلب من كآف AI نسخة مضمّنة بالكامل.',
+      codeTab: 'الكود', previewTab: 'المعاينة', outputTab: 'التشغيل', nLines: '{n} سطر', writingNow: 'يكتب الآن…', readyNow: 'جاهز', fullWidth: 'عرض كامل',
       sandboxed: 'معزولة · بلا شبكة', timedOut: 'تجاوز المهلة', runFailed: 'انتهى بخطأ', noOutput: '(لا توجد مخرجات)', copyOutput: 'نسخ المخرجات', rerun: 'إعادة التشغيل' },
     en: { cannotRun: 'Direct run is available for JavaScript, Python and HTML only.', dev_desktop: 'Desktop', dev_tablet: 'Tablet', dev_mobile: 'Phone', reload: 'Reload', fullPreview: 'Full-size preview',
       console: 'Console', externalBlocked: 'This page requests files from the internet (CDN or external images). The preview is sandboxed with no network, so it may look unstyled. Ask CAF AI for a fully self-contained version.',
+      codeTab: 'Code', previewTab: 'Preview', outputTab: 'Run', nLines: '{n} lines', writingNow: 'Writing…', readyNow: 'Ready', fullWidth: 'Full width',
       sandboxed: 'sandboxed · no network', timedOut: 'Timed out', runFailed: 'Ended with an error', noOutput: '(no output)', copyOutput: 'Copy output', rerun: 'Run again' },
   });
   addAttachItem({ id: 'code-files', icon: 'code', label: () => t('attachCode'), run: () => attachFiles(false) });
@@ -405,6 +496,9 @@ export function init() {
   msgExtras.push((m) => (m.role === 'user' && m.files?.length ? `<div class="msg-files">${m.files.slice(0, 12).map((f) => `<span class="file-chip" dir="ltr" title="${esc(f.name)}">${ic(f.kind === 'code' ? 'code' : 'file')}${esc(f.name.split('/').pop())}</span>`).join('')}${m.files.length > 12 ? `<span class="file-chip">+${m.files.length - 12}</span>` : ''}</div>` : ''));
   slashCommands.push({ cmd: 'code', label: () => t('wsCode'), run: (rest) => { emit('workspace:set', 'code'); if (rest.trim()) { setInput(rest); submit(); } return true; } });
   on('msgs:click', (e) => {
+    const tab = e.target.closest('[data-cbtab]'); if (tab) return inlinePreview(tab);
+    const ao = e.target.closest('[data-artopen]'); if (ao) { const b = blockInfo(ao); return openCanvas({ content: b.code, lang: b.lang === 'svg' ? 'xml' : 'html', name: b.name }).then(() => setTab('preview')); }
+    const ac = e.target.closest('[data-artcode]'); if (ac) { const box = ac.closest('.artifact').querySelector('.art-code'); box.hidden = !box.hidden; ac.setAttribute('aria-expanded', String(!box.hidden)); return; }
     const run = e.target.closest('[data-run]'); if (run) return runInline(run);
     const can = e.target.closest('[data-canvas]'); if (can) { const b = blockInfo(can); return openCanvas({ content: b.code, lang: LANGS.includes(b.lang) ? b.lang : langOf(b.name), name: b.name }); }
     const dl = e.target.closest('[data-dl]'); if (dl) { const b = blockInfo(dl); return download(new Blob([b.code], { type: 'text/plain;charset=utf-8' }), b.name); }
@@ -414,4 +508,5 @@ export function init() {
   on('workspace:changed', renderQuick); on('view:changed', renderQuick); on('ui:applied', () => { renderQuick(); if ($('canvas').dataset.ready && !$('canvas').classList.contains('hidden')) { /* النصوص تتحدّث عند الفتح التالي */ } });
   on('chat:changed', () => { if (cv.doc && state.chat && cv.doc.chatId && cv.doc.chatId !== state.chat.id) closeCanvas(); });
   on('chat:done', autoPreview);
+  on('stream:update', onStream);
 }

@@ -61,14 +61,21 @@ function badge(m) {
   const r = m.route && ROUTE_LABEL[m.route] ? t(ROUTE_LABEL[m.route]) : '';
   return `<span class="model-badge" dir="ltr" title="${esc(t('answeredBy'))}">${esc(m.model)}</span>${r ? `<span class="route-badge">${esc(r)}</span>` : ''}`;
 }
-function thinkHtml(thinking, open, live) {
+// التفكير: شريط مطويّ افتراضيًا، نص «يفكّر…» بلمعان متحرك أثناء التفكير، ويُفتح المحتوى بالنقر فقط
+function thinkLabel(m, live) {
+  if (live) return `<span class="shimmer">${esc(t('thinking'))}</span><span class="think-time" data-since="${m.thinkStart || Date.now()}"></span>`;
+  const s = m.thinkMs ? Math.max(1, Math.round(m.thinkMs / 1000)) : 0;
+  return `<span>${esc(s ? t('thoughtFor', { s }) : t('thoughts'))}</span>`;
+}
+function thinkHtml(m, thinking, open, live) {
   if (!thinking) return '';
-  return `<details class="think" ${open ? 'open' : ''}><summary>${ic('bulb')}<span>${esc(t(live ? 'thinking' : 'thoughts'))}</span></summary><div class="think-body" dir="${dirOf(thinking)}">${esc(thinking).replace(/\n/g, '<br>')}</div></details>`;
+  return `<details class="think${live ? ' live' : ''}" ${open ? 'open' : ''}><summary>${ic('bulb')}${thinkLabel(m, live)}${ic('chevron', 'chev')}</summary><div class="think-body" dir="${dirOf(thinking)}">${esc(thinking).replace(/\n/g, '<br>')}</div></details>`;
 }
 export function msgHtml(m, idx, live) {
   const isUser = m.role === 'user';
   const who = isUser ? t('you') : t('assistant');
-  const avatar = isUser ? `<div class="avatar">${ic('user')}</div>` : '<div class="avatar"><img src="/brand/itcaf-monogram-app-icon.svg" alt=""></div>';
+  // أيقونة كآف تتحرك أثناء التوليد (نسخة حيّة من الشعار) وتثبت بعد الانتهاء
+  const avatar = isUser ? `<div class="avatar">${ic('user')}</div>` : `<div class="avatar${live ? ' live' : ''}"><img src="/brand/itcaf-monogram-${live ? 'live' : 'app-icon'}.svg" alt=""></div>`;
   let { thinking, content, open } = isUser ? { thinking: '', content: m.content, open: false } : splitThink(m.content);
   thinking = m.thinking || thinking;
   const thinkingLive = live && (open || (thinking && !content));
@@ -83,7 +90,7 @@ export function msgHtml(m, idx, live) {
   const acts = !isUser && !live && !m.errCode
     ? `<div class="msg-acts"><button class="mini" data-copymsg="${idx}">${ic('copy')}${esc(t('copy'))}</button>${isLast ? `<button class="mini" data-regen>${ic('refresh')}${esc(t('regenerate'))}</button>` : ''}${msgActions.map((fn) => fn(m, idx)).join('')}</div>`
     : (!isUser && !live && m.errCode && isLast ? `<div class="msg-acts"><button class="mini" data-regen>${ic('refresh')}${esc(t('retry'))}</button></div>` : '');
-  return `<article class="msg ${m.role}${m.errCode ? ' is-err' : ''}" data-i="${idx}">${avatar}<div class="msg-main"><div class="who">${esc(who)}${isUser ? '' : badge(m)}${stat}</div>${isUser ? '' : thinkHtml(thinking, thinkingLive, thinkingLive)}${isUser ? extras : ''}<div class="body">${body}</div>${isUser ? '' : extras}${acts}</div></article>`;
+  return `<article class="msg ${m.role}${m.errCode ? ' is-err' : ''}" data-i="${idx}">${avatar}<div class="msg-main"><div class="who">${esc(who)}${isUser ? '' : badge(m)}${stat}</div>${isUser ? '' : thinkHtml(m, thinking, false, thinkingLive)}${isUser ? extras : ''}<div class="body">${body}</div>${isUser ? '' : extras}${acts}</div></article>`;
 }
 
 function errorBody(m) {
@@ -122,13 +129,20 @@ function patchLive(idx) {
   if (who.__src !== whoHtml) { who.innerHTML = whoHtml; who.__src = whoHtml; }
   // التفكير: نحدّث النص فقط ونحافظ على حالة الطيّ
   let det = node.querySelector('details.think');
-  const thinkingNow = open || (thinking && !content);
+  const thinkingNow = !!(open || (thinking && !content));
   if (thinking) {
-    if (!det) { node.querySelector('.who').insertAdjacentHTML('afterend', thinkHtml(thinking, thinkingNow, thinkingNow)); det = node.querySelector('details.think'); }
+    if (!m.thinkStart) m.thinkStart = Date.now();
+    if (!thinkingNow && !m.thinkMs) m.thinkMs = Date.now() - m.thinkStart;
+    if (!det) { node.querySelector('.who').insertAdjacentHTML('afterend', thinkHtml(m, thinking, false, thinkingNow)); det = node.querySelector('details.think'); }
     const tb = det.querySelector('.think-body');
-    tb.textContent = thinking; tb.dir = dirOf(thinking);
-    det.querySelector('summary span').textContent = t(thinkingNow ? 'thinking' : 'thoughts');
-    if (!det.dataset.user) det.open = !!thinkingNow && state.settings.showThinking !== false;
+    if (det.open) { tb.textContent = thinking; tb.dir = dirOf(thinking); } else tb.dataset.pending = '1';
+    const live = det.classList.contains('live');
+    if (live !== thinkingNow) {
+      det.classList.toggle('live', thinkingNow);
+      det.querySelector('summary').innerHTML = `${ic('bulb')}${thinkLabel(m, thinkingNow)}${ic('chevron', 'chev')}`;
+    }
+    if (thinkingNow) { const tt = det.querySelector('.think-time'); if (tt) tt.textContent = ` ${Math.round((Date.now() - m.thinkStart) / 1000)}${t('secShort')}`; }
+    det.__text = thinking;
   }
   const body = node.querySelector('.body');
   if (!content) {
@@ -137,6 +151,7 @@ function patchLive(idx) {
   } else {
     morph(body, renderMd(content, { live: true }) + '<span class="cursor"></span>');
     enhance(body);
+    emit('stream:update', { idx, msg: m, content });
   }
   scrollDown(false);
 }
@@ -150,7 +165,7 @@ function finalizeMsg(idx) {
   tmp.innerHTML = msgHtml(m, idx, false);
   const fresh = tmp.firstElementChild; fresh.classList.add('patched');
   const det = node.querySelector('details.think'); const nd = fresh.querySelector('details.think');
-  if (det && nd) { nd.open = det.dataset.user ? det.open : false; if (det.dataset.user) nd.dataset.user = '1'; }
+  if (det && nd) { nd.open = !!(det.dataset.user && det.open); if (det.dataset.user) nd.dataset.user = '1'; }
   node.replaceWith(fresh);
   // الرسالة السابقة كانت «الأخيرة» وفيها زر إعادة التوليد: نحدّثها
   const prev = document.querySelector(`.msg[data-i="${idx - 2}"]`);
@@ -195,13 +210,14 @@ export async function send(text, opts = {}) {
   try {
     const r = await api('POST', '/api/chat', {
       model, messages: history, chatId: chat.id, workspace: chat.workspace, route: opts.route || '',
-      collections: chat.collections || [], think: $('thinkSelect')?.value || state.settings.think,
+      collections: chat.collections || [], think: $('thinkSelect')?.value || state.settings.think, skills: opts.skills || [],
     }, { signal: state.abort.signal, raw: true });
     if (!r.ok) { let j = {}; try { j = await r.json(); } catch { /* */ } throw new ApiError(j.error || `http_${r.status}`, r.status, j); }
     await readNdjson(r, (j) => {
       if (j.meta) {
         am.model = j.meta.model || ''; am.route = j.meta.auto ? j.meta.route : 'manual';
         if (j.meta.sources) am.sources = j.meta.sources;
+        if (j.meta.skills?.length) am.skills = j.meta.skills;
         if (j.meta.route === 'image') { am.route = 'image'; am.imagePrompt = j.meta.prompt; }
         scheduleLive(idx); return;
       }
@@ -220,6 +236,8 @@ export async function send(text, opts = {}) {
     }
   }
   delete am.live;
+  if (am.thinking && !am.thinkMs) am.thinkMs = Date.now() - (am.thinkStart || Date.now());
+  delete am.thinkStart;
   setStreaming(false);
   if (!am.content && !am.errCode && !am.thinking) chat.messages.pop();
   if (am.errCode) { am.content = ''; }
@@ -261,6 +279,10 @@ export function bindChat() {
   $('chatList').addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.classList.contains('chat-item')) openChat(e.target.dataset.id); });
   // نعتبر الطيّ/الفتح اختيار المستخدم فقط عند النقر الفعلي (وليس عند فتحه برمجيًا أثناء البث)
   $('msgs').addEventListener('click', (e) => { const sm = e.target.closest('details.think > summary'); if (sm) sm.parentElement.dataset.user = '1'; });
+  $('msgs').addEventListener('toggle', (e) => {
+    const d = e.target; if (!d.matches?.('details.think') || !d.open) return;
+    const tb = d.querySelector('.think-body'); if (tb.dataset.pending && d.__text) { tb.textContent = d.__text; tb.dir = dirOf(d.__text); delete tb.dataset.pending; }
+  }, true);
   $('msgs').addEventListener('click', async (e) => {
     const cp = e.target.closest('[data-copy]');
     if (cp) {

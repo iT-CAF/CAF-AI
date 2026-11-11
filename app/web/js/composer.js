@@ -7,8 +7,10 @@ import { send } from './chat.js';
 export const pending = [];
 // معالجات قبل الإرسال: تحوّل المرفقات المعلّقة إلى خيارات send() (images/files/context)
 export const beforeSend = [];
-// أوامر «/»: { cmd, label, run(rest) → true إن استُهلك النص }
+// أوامر «/»: { cmd, label, hint?, icon?, run(rest) → true إن استُهلك النص }
 export const slashCommands = [];
+// مصادر إضافية لقائمة «/» (مثل المهارات): (query) → [{ id, group, icon?, emoji?, label, hint, pick() }]
+export const slashProviders = [];
 
 export function addPending(item) { pending.push(item); renderTray(); }
 export function removePending(key) {
@@ -22,7 +24,7 @@ export function renderTray() {
   const tray = $('tray'); if (!tray) return;
   setTimeout(() => window.dispatchEvent(new Event('caf:pending')), 0);
   tray.classList.toggle('hidden', !pending.length);
-  tray.innerHTML = pending.map((p) => `<div class="att att-${p.kind}${p.busy ? ' busy' : ''}" data-key="${esc(p.key)}">${p.thumb ? `<img src="${esc(p.thumb)}" alt="">` : ic(p.kind === 'folder' ? 'folder' : 'file')}<span class="att-l" dir="auto" title="${esc(p.title || p.label)}">${esc(p.label)}</span>${p.note ? `<small class="att-n">${esc(p.note)}</small>` : ''}<button type="button" class="mini att-x" data-unpend="${esc(p.key)}" aria-label="${esc(t('remove'))} ${esc(p.label)}">${ic('close')}</button></div>`).join('');
+  tray.innerHTML = pending.map((p) => `<div class="att att-${p.kind}${p.busy ? ' busy' : ''}" data-key="${esc(p.key)}">${p.thumb ? `<img src="${esc(p.thumb)}" alt="">` : ic(p.kind === 'folder' ? 'folder' : p.kind === 'skill' ? 'sparkle' : p.kind === 'sheet' ? 'sheet' : 'file')}<span class="att-l" dir="auto" title="${esc(p.title || p.label)}">${esc(p.label)}</span>${p.note ? `<small class="att-n">${esc(p.note)}</small>` : ''}<button type="button" class="mini att-x" data-unpend="${esc(p.key)}" aria-label="${esc(t('remove'))} ${esc(p.label)}">${ic('close')}</button></div>`).join('');
 }
 
 export const autoGrow = () => { const input = $('input'); input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 240) + 'px'; };
@@ -86,8 +88,47 @@ export function pickFiles({ accept = '', multiple = true, directory = false } = 
   });
 }
 
+// ---------- قائمة «/» ----------
+let slashItems = []; let slashSel = 0;
+function slashQuery() {
+  const v = $('input').value;
+  const m = /^\/([^\s]*)$/.exec(v);
+  return m ? m[1].toLowerCase() : null;
+}
+function closeSlash() { const el = $('slash'); el.classList.add('hidden'); el.innerHTML = ''; slashItems = []; $('input').setAttribute('aria-expanded', 'false'); }
+function renderSlash() {
+  const q = slashQuery();
+  if (q === null) return closeSlash();
+  const cmds = slashCommands.filter((c) => !c.hidden && (!q || c.cmd.startsWith(q) || String(c.label()).toLowerCase().includes(q)))
+    .map((c) => ({ id: 'cmd:' + c.cmd, group: t('slashCommands'), icon: c.icon || 'slash', label: '/' + c.cmd, hint: c.label(), pick: () => { setInput('/' + c.cmd + ' '); } }));
+  const extra = slashProviders.flatMap((fn) => { try { return fn(q) || []; } catch { return []; } });
+  slashItems = [...cmds, ...extra].slice(0, 40);
+  const el = $('slash');
+  if (!slashItems.length) { el.innerHTML = `<p class="muted small sl-empty">${esc(t('slashNone'))}</p>`; el.classList.remove('hidden'); return; }
+  slashSel = Math.min(slashSel, slashItems.length - 1);
+  let last = '';
+  el.innerHTML = slashItems.map((it, i) => {
+    const head = it.group !== last ? `<div class="sl-group">${esc(it.group)}</div>` : ''; last = it.group;
+    return `${head}<button type="button" role="option" id="sl-${i}" data-sl="${i}" aria-selected="${i === slashSel}">${it.emoji ? `<span class="sl-emo">${esc(it.emoji)}</span>` : ic(it.icon || 'slash')}<span class="sl-l" dir="auto">${esc(it.label)}</span><span class="sl-h" dir="auto">${esc(it.hint || '')}</span></button>`;
+  }).join('') + `<div class="sl-foot">${esc(t('slashHelp'))}</div>`;
+  el.classList.remove('hidden');
+  $('input').setAttribute('aria-expanded', 'true'); $('input').setAttribute('aria-activedescendant', 'sl-' + slashSel);
+  el.querySelector(`[data-sl="${slashSel}"]`)?.scrollIntoView({ block: 'nearest' });
+}
+function pickSlash(i) { const it = slashItems[i]; if (!it) return; closeSlash(); it.pick(); $('input').focus(); }
+
 export function bindComposer() {
   const input = $('input');
+  input.setAttribute('role', 'combobox'); input.setAttribute('aria-controls', 'slash'); input.setAttribute('aria-autocomplete', 'list'); input.setAttribute('aria-expanded', 'false');
+  input.addEventListener('input', () => { slashSel = 0; renderSlash(); });
+  input.addEventListener('keydown', (e) => {
+    if ($('slash').classList.contains('hidden') || !slashItems.length) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); slashSel = (slashSel + (e.key === 'ArrowDown' ? 1 : -1) + slashItems.length) % slashItems.length; renderSlash(); }
+    else if ((e.key === 'Enter' && !e.shiftKey && !e.isComposing) || e.key === 'Tab') { e.preventDefault(); pickSlash(slashSel); }
+    else if (e.key === 'Escape') { e.preventDefault(); closeSlash(); }
+  });
+  $('slash').addEventListener('mousedown', (e) => { const b = e.target.closest('[data-sl]'); if (b) { e.preventDefault(); pickSlash(+b.dataset.sl); } });
+  input.addEventListener('blur', () => setTimeout(closeSlash, 150));
   input.addEventListener('input', () => { autoGrow(); emit('composer:input', input.value); });
   input.addEventListener('keydown', (e) => {
     if (e.defaultPrevented) return;

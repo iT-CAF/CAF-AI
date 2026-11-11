@@ -54,18 +54,29 @@ function inline(s) {
     .replace(/\u0000m(\d+)\u0000/g, (_, i) => `<span class="math" data-tex="${esc(maths[+i])}">${esc(maths[+i])}</span>`);
 }
 
-function codeBlock(lang, code, { live, open }) {
+const PREVIEWABLE = new Set(['html', 'htm', 'svg']);
+function codeBlock(lang, code, { open, before = '' }) {
   const l = (lang || '').toLowerCase();
   if (l === 'mermaid' && !open) return `<div class="mermaid-box" data-src="${esc(code)}"><pre class="mermaid-src">${esc(code)}</pre></div>`;
   const lines = code.split('\n').length;
-  const run = RUNNABLE.has(l) ? `<button type="button" class="mini" data-run="1" title="${esc(t('runCode'))}">${ic('play')}<span>${esc(t('run'))}</span></button>` : '';
   const wrap = state.settings?.wrapCode ? ' wrap' : '';
-  return `<div class="codeblock${wrap}" data-lang="${esc(l)}"${open ? ' data-live="1"' : ''}><div class="bar"><span class="lang">${esc(l || 'code')}</span><span class="tools">`
-    + `${run}<button type="button" class="mini" data-canvas title="${esc(t('openCanvas'))}">${ic('panel')}</button>`
-    + `<button type="button" class="mini" data-wrap title="${esc(t('wrapLines'))}">${ic('wrap')}</button>`
-    + `<button type="button" class="mini" data-dl title="${esc(t('downloadFile'))}">${ic('download')}</button>`
+  const tabs = PREVIEWABLE.has(l)
+    ? `<div class="cb-tabs" role="tablist"><button type="button" role="tab" data-cbtab="code" aria-selected="true">${ic('code')}<span>${esc(t('codeTab'))}</span></button><button type="button" role="tab" data-cbtab="preview" aria-selected="false"${open ? ' disabled' : ''}>${ic('eye')}<span>${esc(t('previewTab'))}</span></button></div>`
+    : RUNNABLE.has(l) ? `<button type="button" class="mini run-btn" data-run="1" title="${esc(t('runCode'))}"${open ? ' disabled' : ''}>${ic('play')}<span>${esc(t('run'))}</span></button>` : '';
+  const block = `<div class="codeblock${wrap}" data-lang="${esc(l)}"${open ? ' data-live="1"' : ''}><div class="bar"><span class="cb-title">${ic('filecode')}<b class="lang">${esc(l || 'code')}</b><span class="cb-lines">${esc(t('nLines', { n: lines }))}</span></span><span class="tools">`
+    + `${tabs}<span class="cb-sep"></span><button type="button" class="mini" data-canvas title="${esc(t('openCanvas'))}" aria-label="${esc(t('openCanvas'))}">${ic('panel')}</button>`
+    + `<button type="button" class="mini" data-wrap title="${esc(t('wrapLines'))}" aria-label="${esc(t('wrapLines'))}">${ic('wrap')}</button>`
+    + `<button type="button" class="mini" data-dl title="${esc(t('downloadFile'))}" aria-label="${esc(t('downloadFile'))}">${ic('download')}</button>`
     + `<button type="button" class="mini" data-copy>${ic('copy')}<span>${esc(t('copy'))}</span></button></span></div>`
     + `<div class="code-wrap"><pre class="gutter" aria-hidden="true">${Array.from({ length: lines }, (_, i) => i + 1).join('\n')}</pre><pre class="src"><code class="${l ? 'language-' + esc(l) : ''}">${esc(code)}</code></pre></div></div>`;
+  // مساحة الكود: صفحات HTML تظهر كبطاقة ملف (المعاينة في اللوحة الجانبية) بدل كتلة طويلة
+  if (state.workspace === 'code' && PREVIEWABLE.has(l) && lines >= 8) {
+    const name = guessFileName(code, l, before);
+    return `<div class="artifact${open ? ' writing' : ''}" data-lang="${esc(l)}"><div class="art-head"><span class="art-ic">${ic('filecode')}</span><div class="art-meta"><b dir="ltr">${esc(name)}</b><small>${esc(l.toUpperCase())} · ${esc(t('nLines', { n: lines }))} · <span class="art-state">${esc(t(open ? 'writingNow' : 'readyNow'))}</span></small></div>`
+      + `<div class="art-acts"><button type="button" class="btn small primary" data-artopen${open ? ' disabled' : ''}>${ic('eye')}<span>${esc(t('previewTab'))}</span></button><button type="button" class="btn small" data-artcode aria-expanded="false">${ic('code')}<span>${esc(t('codeTab'))}</span></button><button type="button" class="btn small icon-only" data-dl title="${esc(t('downloadFile'))}" aria-label="${esc(t('downloadFile'))}">${ic('download')}</button></div></div>`
+      + `<div class="art-code" hidden>${block}</div></div>`;
+  }
+  return block;
 }
 
 export function renderMd(src, { live = false } = {}) {
@@ -81,7 +92,7 @@ export function renderMd(src, { live = false } = {}) {
       while (i < lines.length && !lines[i].trim().startsWith(close)) buf.push(lines[i++]);
       const open = i >= lines.length; // الكتلة لم تُغلق بعد (أثناء البث)
       i++;
-      out.push(codeBlock(fence[2], buf.join('\n'), { live, open: live && open }));
+      out.push(codeBlock(fence[2], buf.join('\n'), { open: live && open, before: out.length ? out[out.length - 1].replace(/<[^>]+>/g, '') : '' }));
       continue;
     }
     // رياضيات كتلية $$ … $$ أو \[ … \]

@@ -1,0 +1,2 @@
+Source: https://github.com/seb1n/awesome-ai-agent-skills (commit 75865a5d037a4cdaa7f409a4ec14ab9b0292920b)
+License: MIT (see LICENSE). Copied unmodified.

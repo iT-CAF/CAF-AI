@@ -6,6 +6,8 @@ export const state = {
   workspace: 'chat', view: 'chat', hardware: null, catalog: null, providers: [], pending: [],
 };
 
+// صفحات تُرسم عند فتحها (الوحدات تضيف صفحاتها هنا)
+export const pages = {};
 export const $ = (id) => document.getElementById(id);
 export const qs = (sel, root = document) => root.querySelector(sel);
 export const qsa = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -17,7 +19,19 @@ export const t = (k, vars) => {
   return s;
 };
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-export const ic = (name, cls = '') => `<span class="ic ${cls}" style="--i:url(/brand/icons/${name}.svg)" aria-hidden="true"></span>`;
+// أيقونات الواجهة: مجموعة Lucide (ISC) + شعار GitHub من Octicons (MIT) في brand/icons/ui — والهوية (الشعار) كما هي
+export const ICONS = {
+  copy: 'copy', check: 'check', download: 'download', eye: 'eye', code: 'code-xml', play: 'play', panel: 'panel-right-open', wrap: 'wrap-text',
+  refresh: 'refresh-cw', close: 'x', trash: 'trash-2', edit: 'pencil', clip: 'paperclip', image: 'image', file: 'file-text', folder: 'folder-open',
+  bulb: 'brain', sparkle: 'sparkles', wand: 'wand-sparkles', terminal: 'square-terminal', diff: 'git-compare', device: 'laptop', chip: 'cpu', box: 'box',
+  globe: 'globe', github: 'github', alert: 'triangle-alert', upload: 'upload', book: 'book-open', chat: 'message-square', mic: 'mic', speaker: 'volume-2',
+  search: 'search', plus: 'plus', sliders: 'settings-2', server: 'server', lock: 'lock', shield: 'shield-check', history: 'history', save: 'save',
+  maximize: 'maximize-2', minimize: 'minimize-2', external: 'external-link', sheet: 'file-spreadsheet', filecode: 'file-code-2', clock: 'clock',
+  loader: 'loader-circle', desktop: 'monitor', tablet: 'tablet', mobile: 'smartphone', sun: 'sun', moon: 'moon', menu: 'menu', up: 'arrow-up', down: 'arrow-down',
+  ok: 'circle-check', fail: 'circle-x', filedown: 'file-down', database: 'server', chevron: 'chevron-down', help: 'circle-help', keyboard: 'keyboard', rocket: 'rocket', lifebuoy: 'life-buoy',
+};
+export const iconUrl = (name) => (ICONS[name] ? `/brand/icons/ui/${ICONS[name]}.svg` : `/brand/icons/${name}.svg`);
+export const ic = (name, cls = '') => `<span class="ic ${cls}" style="--i:url(${iconUrl(name)})" aria-hidden="true"></span>`;
 export const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(16) + Math.random().toString(16).slice(2)).toLowerCase();
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

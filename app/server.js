@@ -20,7 +20,7 @@ const router = createRouter();
 const ctx = { chat: createChat(), shutdown: (code) => shutdown(code), router };
 
 // تسجيل المسارات (كل وحدة تضيف مساراتها)
-for (const mod of ['core', 'hardware', 'addons', 'canvas']) require(`./lib/routes/${mod}`)(router, ctx);
+for (const mod of ['core', 'hardware', 'addons', 'canvas', 'skills', 'update']) require(`./lib/routes/${mod}`)(router, ctx);
 
 // ---------- الملفات الثابتة ----------
 const STATIC_CACHE = new Set(['.woff2', '.svg', '.png', '.wasm']);
@@ -103,6 +103,8 @@ async function main() {
     if (m.changed) log.info('data migrated', m);
   } catch (e) { log.error('migration failed', { err: String(e.stack || e) }); }
   try { const n = require('./lib/store').cleanOrphanAttachments(); if (n) log.info('orphan attachments removed', { n }); } catch { /* */ }
+  // بعد التحديث: ننتظر حتى تغلق النسخة القديمة منفذها
+  if (process.env.CAF_RESTART_DELAY) { await new Promise((r) => setTimeout(r, Math.min(10000, parseInt(process.env.CAF_RESTART_DELAY, 10) || 0))); delete process.env.CAF_RESTART_DELAY; }
   const noOpen = process.argv.includes('--no-open') || process.env.CAF_NO_BROWSER;
   const preferred = parseInt(process.env.CAF_PORT, 10) || 3737;
 

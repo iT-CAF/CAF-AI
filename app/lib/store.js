@@ -67,6 +67,7 @@ function cleanMessage(x) {
   if (x.model) m.model = str(x.model, 200);
   if (x.route) m.route = str(x.route, 20);
   if (x.thinking) m.thinking = String(x.thinking);
+  if (x.thinkMs) m.thinkMs = Math.max(0, Math.round(Number(x.thinkMs) || 0));
   if (x.stat) m.stat = str(x.stat, 80);
   if (x.err) m.err = true;
   const imgs = cleanImages(x.images); if (imgs.length) m.images = imgs;
@@ -79,6 +80,7 @@ function cleanMessage(x) {
   if (x.gen && Array.isArray(x.gen.images)) {
     m.gen = { images: x.gen.images.filter(isId).slice(0, 8), prompt: str(x.gen.prompt, 4000), status: str(x.gen.status, 20) };
   }
+  if (Array.isArray(x.skills) && x.skills.length) m.skills = x.skills.slice(0, 3).map((k) => ({ id: str(k.id, 140), name: str(k.name, 120), emoji: str(k.emoji, 8), auto: !!k.auto }));
   if (x.context) m.context = String(x.context).slice(0, 2_000_000); // نص مستند مُرفق صغير أُدخل في السياق
   return m;
 }
