@@ -30,7 +30,7 @@ async function knowledgeContext({ body, text, settings }) {
 const ctx = { chat: createChat({ extraContext: knowledgeContext }), shutdown: (code) => shutdown(code), router };
 
 // تسجيل المسارات (كل وحدة تضيف مساراتها)
-for (const mod of ['core', 'hardware', 'addons', 'canvas', 'skills', 'update', 'docs', 'images', 'voice']) require(`./lib/routes/${mod}`)(router, ctx);
+for (const mod of ['core', 'hardware', 'addons', 'canvas', 'skills', 'update', 'docs', 'images', 'voice', 'backup']) require(`./lib/routes/${mod}`)(router, ctx);
 
 // ---------- الملفات الثابتة ----------
 const STATIC_CACHE = new Set(['.woff2', '.svg', '.png', '.wasm']);
