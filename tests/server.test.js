@@ -164,3 +164,16 @@ test('vision: images go to vision models only, auto-routing picks one', async ()
   const sent = S.mock.calls.filter((c) => c.path === '/api/chat').at(-1).body;
   assert.equal(sent.messages.at(-1).images[0], png.toString('base64'));
 });
+
+test('voice is opt-in and degrades gracefully without engines', async () => {
+  const wav = Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(40)]);
+  assert.equal((await S.api('POST', '/api/voice/stt', { body: wav, headers: { 'Content-Type': 'audio/wav' } })).status, 403, 'disabled by default');
+  await S.api('PUT', '/api/settings', { body: { voiceEnabled: true } });
+  const st = await S.api('GET', '/api/voice/status');
+  assert.equal(st.json.enabled, true);
+  assert.equal(st.json.tts.engine, 'system', 'falls back to local system voices');
+  const r = await S.api('POST', '/api/voice/stt', { body: wav, headers: { 'Content-Type': 'audio/wav' } });
+  assert.equal(r.status, 409); assert.equal(r.json.error, 'no_stt');
+  assert.equal((await S.api('POST', '/api/voice/tts', { body: { text: 'مرحبا' } })).json.mode, 'system');
+  await S.api('PUT', '/api/settings', { body: { voiceEnabled: false } });
+});

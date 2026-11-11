@@ -44,6 +44,8 @@ Not distributed in this repository; CAF AI downloads them from official sources 
 | openpyxl 3.1.5 · et_xmlfile 2.0.0 | تعديل ملفات Excel · editing Excel files | MIT | https://pypi.org/project/openpyxl/ |
 | python-docx 1.2.0 · typing_extensions 4.15.0 | تعديل ملفات Word · editing Word files | MIT · PSF-2.0 | https://pypi.org/project/python-docx/ |
 | lxml 6.1.3 (Pyodide build) | معالجة XML لـ python-docx | BSD-3-Clause | https://lxml.de |
+| whisper.cpp (b5454) | تحويل الكلام إلى نص · speech-to-text (اختياري · optional) | MIT | https://github.com/ggml-org/whisper.cpp |
+| Piper (2023.11.14-2) | تحويل النص إلى كلام · text-to-speech (ويندوز/لينكس · Windows/Linux) | MIT | https://github.com/rhasspy/piper |
 
 ## 3. نماذج الذكاء الاصطناعي · AI models
 
@@ -65,3 +67,8 @@ and the app warns before downloading anything with a non-commercial license.
 | FLUX.2 klein 4B (GGUF: leejet) · FLUX.2 VAE (Comfy-Org) | Apache-2.0 |
 | Z-Image Turbo (GGUF: leejet) · its VAE (Comfy-Org) | Apache-2.0 |
 | Qwen3-4B / Qwen3-4B-Instruct-2507 GGUF (unsloth) — مشفّر النص لنماذج الصور | Apache-2.0 |
+| Whisper base / small / large-v3-turbo (ggml: ggerganov/whisper.cpp) | MIT |
+| Piper voice ar_JO-kareem-medium (rhasspy/piper-voices) | MIT (نموذج الصوت · voice model)؛ راجع بطاقة النموذج لشروط بيانات التدريب · see the model card for training-data terms |
+
+على macOS لا يُنزَّل Piper (إصداره الرسمي لماك ناقص مكتبة espeak-ng)، ويُستخدم بدلًا منه صوت النظام المحلي (مثل «ماجد») عبر المتصفح دون أي اتصال.
+On macOS Piper is not downloaded (its official macOS build ships without the espeak-ng library); the local system voice is used through the browser instead, fully offline.

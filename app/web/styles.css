@@ -773,3 +773,7 @@ details.sources li p{margin:3px 0 0;color:var(--text-muted);font-size:12.5px;lin
 .gen-prompt summary{cursor:pointer;font-size:12.5px;color:var(--text-muted)}
 .gen-prompt p{font:400 12.5px/1.6 var(--f-mono);color:var(--text-muted);margin:4px 0 0}
 @media(max-width:980px){.img-layout{grid-template-columns:1fr}.img-form{position:static}}
+.mic-btn.rec{color:var(--signal-text)!important;background:color-mix(in srgb,var(--signal) 16%,transparent)!important;animation:recPulse 1s steps(2,end) infinite}
+@keyframes recPulse{50%{box-shadow:0 0 0 3px color-mix(in srgb,var(--signal) 35%,transparent)}}
+.mic-btn.busy{opacity:.6;pointer-events:none}
+[data-listen].on{color:var(--accent-text)}

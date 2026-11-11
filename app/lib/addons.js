@@ -41,7 +41,7 @@ function engineStatus(id) {
   return {
     id, kind: 'engine', name: e.name, version: e.version, license: e.license, homepage: e.homepage, capability: e.capability,
     installed, installedVersion: mark?.version || null, updateAvailable: !!mark && mark.version !== e.version,
-    supported: !!asset || !!e.systemBinary, variant: asset?.key || null, downloadSize: asset?.size || 0,
+    supported: !!asset || !!e.systemBinary, downloadable: !!asset, variant: asset?.key || null, downloadSize: asset?.size || 0,
     path: dir, size: installed ? dirSize(dir).bytes : 0, binDir: mark?.binDir || '',
   };
 }
@@ -90,7 +90,6 @@ async function installEngine(id, { update = () => {}, signal } = {}) {
   else fs.copyFileSync(archive, path.join(stage, asset.bin || path.basename(archive)));
   const binDir = findBinDir(stage, e.check);
   if (binDir === null) { fs.rmSync(stage, { recursive: true, force: true }); throw new DownloadError('EXTRACT_FAILED', `${e.check} not found`); }
-  if (process.platform === 'darwin') { try { require('child_process').spawnSync('xattr', ['-dr', 'com.apple.quarantine', stage], { stdio: 'ignore' }); } catch { /* */ } }
   writeJsonAtomic(path.join(stage, MARK), { id, version: e.version, variant: asset.key, binDir, installedAt: new Date().toISOString() });
   fs.rmSync(dir, { recursive: true, force: true });
   fs.renameSync(stage, dir);

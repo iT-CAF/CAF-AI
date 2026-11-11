@@ -71,6 +71,64 @@
           "backend": "vulkan"
         }
       }
+    },
+    "piper": {
+      "name": "Piper TTS",
+      "version": "2023.11.14-2",
+      "license": "MIT",
+      "homepage": "https://github.com/rhasspy/piper",
+      "capability": "tts",
+      "check": "piper",
+      "note": "macOS builds of this release ship without their dylibs (verified), so macOS uses the system's local voices instead.",
+      "assets": {
+        "linux-x64": {
+          "url": "https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_linux_x86_64.tar.gz",
+          "size": 26460462,
+          "hash": "sha256:a50cb45f355b7af1f6d758c1b360717877ba0a398cc8cbe6d2a7a3a26e225992",
+          "type": "tgz"
+        },
+        "linux-arm64": {
+          "url": "https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_linux_aarch64.tar.gz",
+          "size": 26004717,
+          "hash": "sha256:fea0fd2d87c54dbc7078d0f878289f404bd4d6eea6e7444a77835d1537ab88eb",
+          "type": "tgz"
+        },
+        "win32-x64": {
+          "url": "https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_windows_amd64.zip",
+          "size": 22477236,
+          "hash": "sha256:f3c58906402b24f3a96d92145f58acba6d86c9b5db896d207f78dc80811efcea",
+          "type": "zip"
+        }
+      }
+    },
+    "whisper": {
+      "name": "whisper.cpp",
+      "version": "b5454",
+      "license": "MIT",
+      "homepage": "https://github.com/ggml-org/whisper.cpp",
+      "capability": "stt",
+      "check": "whisper-cli",
+      "systemBinary": "whisper-cli",
+      "assets": {
+        "linux-x64": {
+          "url": "https://github.com/ggml-org/whisper.cpp/releases/download/b5454/whisper-bin-ubuntu-x64.tar.gz",
+          "size": 10364195,
+          "hash": "sha256:a72becf15d7917f990f6313867a52638b82b7f9ef237fb0c980dac56a135781c",
+          "type": "tgz"
+        },
+        "linux-arm64": {
+          "url": "https://github.com/ggml-org/whisper.cpp/releases/download/b5454/whisper-bin-ubuntu-arm64.tar.gz",
+          "size": 4608377,
+          "hash": "sha256:6b95ebfc60447df48e70ef00a73bdc3f41679ed2d01ef465827206a2ff325149",
+          "type": "tgz"
+        },
+        "win32-x64": {
+          "url": "https://github.com/ggml-org/whisper.cpp/releases/download/b5454/whisper-bin-x64.zip",
+          "size": 8928640,
+          "hash": "sha256:6ba69e3482d7826214f90a6a9c84ca07782aec1e1d0c6a7c30c994fd5d816ccb",
+          "type": "zip"
+        }
+      }
     }
   },
   "models": {
@@ -193,6 +251,75 @@
           "url": "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/vae/ae.safetensors",
           "size": 335304388,
           "hash": "sha256:afc8e28272cd15db3919bacdb6918ce9c1ed22e96cb12c4d5ed0fba823529e38"
+        }
+      ]
+    },
+    "voice-ar-kareem": {
+      "name": "صوت عربي · Arabic voice (ar_JO kareem)",
+      "kind": "voice",
+      "lang": "ar",
+      "license": "MIT (piper-voices); training dataset has no stated license — personal use recommended",
+      "capability": "tts",
+      "files": [
+        {
+          "name": "ar_JO-kareem-medium.onnx",
+          "url": "https://huggingface.co/rhasspy/piper-voices/resolve/main/ar/ar_JO/kareem/medium/ar_JO-kareem-medium.onnx",
+          "size": 63201294,
+          "hash": "sha256:9e95cab07b679da603bba17c4dec7ab3111320571964ee95c0379603c086491e"
+        },
+        {
+          "name": "ar_JO-kareem-medium.onnx.json",
+          "url": "https://huggingface.co/rhasspy/piper-voices/resolve/main/ar/ar_JO/kareem/medium/ar_JO-kareem-medium.onnx.json",
+          "size": 5024,
+          "hash": "sha256:ea6d9b9d9076dbdb6bf5c98c6a141ef154959d2359709b37855727964e7d6c4d"
+        }
+      ]
+    },
+    "whisper-base": {
+      "name": "Whisper base",
+      "kind": "stt",
+      "license": "MIT",
+      "capability": "stt",
+      "tier": "fast",
+      "ramGB": 1,
+      "files": [
+        {
+          "name": "ggml-base.bin",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin",
+          "size": 147951465,
+          "hash": "sha256:60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe"
+        }
+      ]
+    },
+    "whisper-small": {
+      "name": "Whisper small",
+      "kind": "stt",
+      "license": "MIT",
+      "capability": "stt",
+      "tier": "balanced",
+      "ramGB": 2,
+      "files": [
+        {
+          "name": "ggml-small.bin",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin",
+          "size": 487601967,
+          "hash": "sha256:1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b"
+        }
+      ]
+    },
+    "whisper-turbo": {
+      "name": "Whisper large-v3-turbo-q5_0",
+      "kind": "stt",
+      "license": "MIT",
+      "capability": "stt",
+      "tier": "quality",
+      "ramGB": 3,
+      "files": [
+        {
+          "name": "ggml-large-v3-turbo-q5_0.bin",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin",
+          "size": 574041195,
+          "hash": "sha256:394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2"
         }
       ]
     }
