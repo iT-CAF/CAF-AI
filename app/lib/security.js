@@ -59,8 +59,8 @@ const CSP_APP = "default-src 'self'; img-src 'self' data: blob:; media-src 'self
 // عامل تشغيل JavaScript: يُسمح بـ eval لتشغيل كود المستخدم فقط، وممنوع أي اتصال شبكة
 const CSP_JS_WORKER = "default-src 'none'; script-src 'self' 'unsafe-eval'; connect-src 'none'";
 
-// عامل Pyodide: يحمّل ملفاته من ‎/runtime/pyodide/‎ فقط، ولا اتصال بأي مسار آخر
-const cspPyWorker = (host) => `default-src 'none'; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval' http://${host}/runtime/pyodide/; connect-src http://${host}/runtime/pyodide/`;
+// عامل Pyodide: يحمّل ملفاته من ‎/runtime/‎ فقط (Pyodide وأدوات المكتب)، ولا اتصال بأي مسار آخر
+const cspPyWorker = (host) => `default-src 'none'; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval' http://${host}/runtime/; connect-src http://${host}/runtime/`;
 
 // إطار المعاينة الحية: أصل معتم (sandbox بدون allow-same-origin)، بلا شبكة، ويُضمَّن من الواجهة فقط
 const CSP_SANDBOX = "sandbox allow-scripts allow-modals; default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' blob: data:; style-src 'unsafe-inline' blob: data:; img-src data: blob:; font-src data: blob:; media-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'; frame-ancestors 'self'";

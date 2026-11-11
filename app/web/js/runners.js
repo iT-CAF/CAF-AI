@@ -25,6 +25,19 @@ export function runJS(code, { timeout = 8000, onLine } = {}) {
 // ---------- Python (Pyodide) ----------
 let pyWorker = null;
 let pyBusy = null;
+// أدوات المكتب (openpyxl/python-docx) لتعديل ملفات Excel وWord
+export async function ensureOffice() {
+  if (!(await ensurePyodide())) return null;
+  const r = await api('GET', '/api/addons');
+  let m = r.models.find((x) => x.id === 'office-py');
+  if (!m?.installed) {
+    if (!(await confirmBox(t('officeInstallAsk', { size: fmtBytes(m?.downloadSize || 2.7e6) }), { ok: t('download') }))) return null;
+    if (!(await installAddon('office-py', t('officeTools')))) return null;
+  }
+  return OFFICE_WHEELS;
+}
+export const OFFICE_WHEELS = ['typing_extensions-4.15.0-py3-none-any.whl', 'lxml-6.1.3-cp314-cp314-pyemscripten_2026_0_wasm32.whl', 'et_xmlfile-2.0.0-py3-none-any.whl', 'openpyxl-3.1.5-py2.py3-none-any.whl', 'python_docx-1.2.0-py3-none-any.whl'];
+
 export async function pyodideStatus() {
   const r = await api('GET', '/api/addons');
   return r.engines.find((e) => e.id === 'pyodide');
@@ -58,7 +71,7 @@ function getPyWorker() {
   if (!pyWorker) pyWorker = new Worker('/js/workers/py-runner.js', { type: 'module' });
   return pyWorker;
 }
-export async function runPython(code, { timeout = 30000, onLine, onStatus } = {}) {
+export async function runPython(code, { timeout = 30000, onLine, onStatus, files = [], wheels = [] } = {}) {
   if (!(await ensurePyodide())) return { lines: [{ type: 'err', text: t('pyNotInstalled') }], failed: true };
   while (pyBusy) await pyBusy;
   let release; pyBusy = new Promise((r) => { release = r; });
@@ -71,14 +84,14 @@ export async function runPython(code, { timeout = 30000, onLine, onStatus } = {}
       const arm = () => { clearTimeout(timer); timer = setTimeout(() => { w.terminate(); pyWorker = null; push('err', t('runTimeout', { s: Math.round(timeout / 1000) })); resolve({ lines, timedOut: true }); }, timeout); };
       w.onmessage = (e) => {
         const m = e.data;
-        if (m.type === 'status') { onStatus?.(m.text); if (m.text === 'ready') arm(); return; }
-        if (m.type === 'done') { clearTimeout(timer); resolve({ lines, ms: m.ms, failed: m.failed }); return; }
+        if (m.type === 'status') { onStatus?.(m.text); if (m.text === 'ready') arm(); else clearTimeout(timer); return; }
+        if (m.type === 'done') { clearTimeout(timer); resolve({ lines, ms: m.ms, failed: m.failed, error: m.error, outputs: m.outputs || [] }); return; }
         push(m.type, m.text);
       };
       w.onerror = (e) => { clearTimeout(timer); w.terminate(); pyWorker = null; push('err', e.message || 'error'); resolve({ lines, failed: true }); };
       // مهلة التحميل الأول أطول (فك WebAssembly)، ثم مهلة التشغيل
       timer = setTimeout(() => { w.terminate(); pyWorker = null; push('err', t('pyLoadFailed')); resolve({ lines, failed: true }); }, 120000);
-      w.postMessage({ code });
+      w.postMessage({ code, files, wheels }, files.map((f) => f.data).filter((d) => d instanceof ArrayBuffer));
     });
   } finally { pyBusy = null; release(); }
 }

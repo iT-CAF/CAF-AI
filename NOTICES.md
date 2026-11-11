@@ -19,6 +19,13 @@ the CAF AI license does not change their terms.
 | pdf.js wasm decoders (OpenJPEG, JBIG2, qcms) | 6.5.438 | فك صور PDF · PDF image decoding | BSD-2-Clause / Apache-2.0 / MIT (see `app/web/vendor/pdfjs/wasm/LICENSE_*`) | https://github.com/mozilla/pdf.js |
 | CodeMirror 6 (+ @codemirror/lang-*, @codemirror/merge, @lezer/*) | 6.0.2 / view 6.43.15 / merge 6.12.3 | محرر اللوحة الجانبية والفروق · canvas editor & diff | MIT | https://codemirror.net |
 
+أيقونات الواجهة في `app/web/brand/icons/ui`: Lucide 1.71.0 (ISC، `LICENSE-lucide.txt`) وشعار GitHub من Octicons 19.42.0 (MIT، `LICENSE-octicons.txt`).
+UI icons in `app/web/brand/icons/ui`: Lucide 1.71.0 (ISC) and the GitHub mark from Octicons 19.42.0 (MIT).
+
+المهارات المجتمعية في `app/skills/community` منسوخة دون تعديل من awesome-ai-agent-skills (commit 75865a5) برخصة MIT — انظر `LICENSE` و`SOURCE.txt` في المجلد.
+Community skills in `app/skills/community` are copied unmodified from seb1n/awesome-ai-agent-skills (commit 75865a5), MIT — see `LICENSE` and `SOURCE.txt` there.
+المهارات المستوردة من المستخدم (مثل Agency Agents، MIT) تُنسخ إلى `CAF_HOME/skills` ولا تُوزَّع مع البرنامج.
+
 الخطوط المضمّنة في `app/web/brand/fonts`: Thmanyah Serif Text (مرفقة مع الهوية البصرية لـ iT CAF)،
 IBM Plex Sans Arabic وJetBrains Mono برخصة SIL OFL 1.1. خطوط KaTeX برخصة SIL OFL 1.1.
 
@@ -33,6 +40,9 @@ Not distributed in this repository; CAF AI downloads them from official sources 
 | llama.cpp / ggml (داخل Ollama) | تنفيذ النماذج · inference | MIT | https://github.com/ggml-org/llama.cpp |
 | Node.js | تشغيل الخادم المحلي (إن لم يوجد) · local server runtime | MIT | https://nodejs.org |
 | Pyodide 314.0.7 | تشغيل Python في المتصفح · Python in the browser | MPL-2.0 (CPython: PSF License) | https://pyodide.org |
+| openpyxl 3.1.5 · et_xmlfile 2.0.0 | تعديل ملفات Excel · editing Excel files | MIT | https://pypi.org/project/openpyxl/ |
+| python-docx 1.2.0 · typing_extensions 4.15.0 | تعديل ملفات Word · editing Word files | MIT · PSF-2.0 | https://pypi.org/project/python-docx/ |
+| lxml 6.1.3 (Pyodide build) | معالجة XML لـ python-docx | BSD-3-Clause | https://lxml.de |
 
 ## 3. نماذج الذكاء الاصطناعي · AI models
 

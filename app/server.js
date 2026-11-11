@@ -17,10 +17,20 @@ const { tr, say, ok, info, step, amber } = ui;
 
 let httpPort = 0;
 const router = createRouter();
-const ctx = { chat: createChat(), shutdown: (code) => shutdown(code), router };
+// السياق من مكتبة المعرفة (RAG) للمحادثات المرتبطة بمجموعات مستندات
+const rag = require('./lib/rag');
+const { isId } = require('./lib/fsx');
+async function knowledgeContext({ body, text, settings }) {
+  const ids = (Array.isArray(body.collections) ? body.collections : []).filter(isId);
+  if (!ids.length || !String(text).trim()) return null;
+  const hits = await rag.search(ids, text, { k: settings.ragTopK, embed: require('./lib/routes/docs').embedFn() });
+  if (!hits.length) return { meta: { sources: [] } };
+  return { system: rag.contextBlock(hits, settings.lang), meta: { sources: hits.map((h, i) => ({ n: i + 1, file: h.docName, loc: h.loc, doc: h.docId, text: h.text.slice(0, 400) })) } };
+}
+const ctx = { chat: createChat({ extraContext: knowledgeContext }), shutdown: (code) => shutdown(code), router };
 
 // تسجيل المسارات (كل وحدة تضيف مساراتها)
-for (const mod of ['core', 'hardware', 'addons', 'canvas', 'skills', 'update']) require(`./lib/routes/${mod}`)(router, ctx);
+for (const mod of ['core', 'hardware', 'addons', 'canvas', 'skills', 'update', 'docs']) require(`./lib/routes/${mod}`)(router, ctx);
 
 // ---------- الملفات الثابتة ----------
 const STATIC_CACHE = new Set(['.woff2', '.svg', '.png', '.wasm']);

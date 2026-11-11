@@ -70,7 +70,7 @@ test('workers and the preview frame get their own strict CSP', async () => {
   const js = await S.raw('GET', '/js/workers/js-runner.js');
   assert.match(js.headers['content-security-policy'], /connect-src 'none'/);
   const py = await S.raw('GET', '/js/workers/py-runner.js');
-  assert.match(py.headers['content-security-policy'], new RegExp(`connect-src http://127.0.0.1:${S.port}/runtime/pyodide/$`));
+  assert.match(py.headers['content-security-policy'], new RegExp(`connect-src http://127.0.0.1:${S.port}/runtime/$`));
   const fr = await S.raw('GET', '/sandbox/frame.html');
   assert.match(fr.headers['content-security-policy'], /^sandbox allow-scripts/);
   assert.match(fr.headers['content-security-policy'], /connect-src 'none'/);

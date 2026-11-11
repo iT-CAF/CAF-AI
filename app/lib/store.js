@@ -75,11 +75,13 @@ function cleanMessage(x) {
     m.files = x.files.slice(0, 50).map((f) => ({ name: str(f.name, 300), size: Number(f.size) || 0, kind: str(f.kind, 20), chars: Number(f.chars) || 0, ...(f.collection && isId(f.collection) ? { collection: f.collection } : {}) }));
   }
   if (Array.isArray(x.sources) && x.sources.length) {
-    m.sources = x.sources.slice(0, 30).map((s) => ({ n: Number(s.n) || 0, file: str(s.file, 300), loc: str(s.loc, 80), doc: str(s.doc, 64) }));
+    m.sources = x.sources.slice(0, 30).map((s) => ({ n: Number(s.n) || 0, file: str(s.file, 300), loc: str(s.loc, 80), doc: str(s.doc, 64), text: str(s.text, 400) }));
   }
   if (x.gen && Array.isArray(x.gen.images)) {
     m.gen = { images: x.gen.images.filter(isId).slice(0, 8), prompt: str(x.gen.prompt, 4000), status: str(x.gen.status, 20) };
   }
+  if (Array.isArray(x.outputs) && x.outputs.length) m.outputs = x.outputs.slice(0, 10).filter((f) => isId(f.id)).map((f) => ({ id: f.id, name: str(f.name, 200), size: Number(f.size) || 0, kind: str(f.kind, 20) }));
+  if (x.task) m.task = { status: str(x.task.status, 20), log: str(x.task.log, 4000), attempts: Number(x.task.attempts) || 0 };
   if (Array.isArray(x.skills) && x.skills.length) m.skills = x.skills.slice(0, 3).map((k) => ({ id: str(k.id, 140), name: str(k.name, 120), emoji: str(k.emoji, 8), auto: !!k.auto }));
   if (x.context) m.context = String(x.context).slice(0, 2_000_000); // نص مستند مُرفق صغير أُدخل في السياق
   return m;
@@ -125,8 +127,9 @@ function saveChat(id, c) {
 }
 function deleteChat(id) {
   try { fs.unlinkSync(chatFile(id)); } catch { /* غير موجود */ }
-  const dir = within(P.attachments, id);
-  if (dir) fs.rmSync(dir, { recursive: true, force: true });
+  for (const base of [P.attachments, path.join(P.data, 'files')]) { const dir = within(base, id); if (dir) fs.rmSync(dir, { recursive: true, force: true }); }
+  // مجموعات المستندات الخاصة بهذه المحادثة فقط
+  try { const rag = require('./rag'); for (const c of rag.list()) if (c.scope === 'chat' && c.chatId === id) rag.remove(c.id); } catch { /* */ }
 }
 function deleteAllChats() {
   for (const f of fs.readdirSync(P.chats)) if (f.endsWith('.json')) deleteChat(f.slice(0, -5));

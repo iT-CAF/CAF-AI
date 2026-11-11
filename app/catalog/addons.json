@@ -3,12 +3,69 @@
   "verified": "Asset URLs, sizes and digests checked on 2026-11-11 (GitHub release digests, npm integrity, Hugging Face LFS sha256).",
   "engines": {
     "pyodide": {
-      "name": "Pyodide", "version": "314.0.7", "license": "MPL-2.0", "homepage": "https://pyodide.org", "capability": "code-run",
+      "name": "Pyodide",
+      "version": "314.0.7",
+      "license": "MPL-2.0",
+      "homepage": "https://pyodide.org",
+      "capability": "code-run",
       "assets": {
-        "any": { "url": "https://registry.npmjs.org/pyodide/-/pyodide-314.0.7.tgz", "size": 6488647, "hash": "sha512-0YvXxEhfEdpLfb/XkM2BFAeMROq0iMUX2bzzH9pOttyMcWkwq+HbE5uyuGD82LN7y2q+SNvi/6V5JEsOlD2R1A==", "type": "tgz", "strip": 1, "include": ["pyodide.mjs", "pyodide.asm.mjs", "pyodide.asm.wasm", "python_stdlib.zip", "pyodide-lock.json", "package.json"] }
+        "any": {
+          "url": "https://registry.npmjs.org/pyodide/-/pyodide-314.0.7.tgz",
+          "size": 6488647,
+          "hash": "sha512-0YvXxEhfEdpLfb/XkM2BFAeMROq0iMUX2bzzH9pOttyMcWkwq+HbE5uyuGD82LN7y2q+SNvi/6V5JEsOlD2R1A==",
+          "type": "tgz",
+          "strip": 1,
+          "include": [
+            "pyodide.mjs",
+            "pyodide.asm.mjs",
+            "pyodide.asm.wasm",
+            "python_stdlib.zip",
+            "pyodide-lock.json",
+            "package.json"
+          ]
+        }
       },
       "check": "pyodide.mjs"
     }
   },
-  "models": {}
+  "models": {
+    "office-py": {
+      "name": "أدوات المكتب لـ Python · Office tools (openpyxl, python-docx)",
+      "kind": "python-wheels",
+      "license": "MIT (openpyxl, et_xmlfile, python-docx, typing_extensions) · BSD-3 (lxml)",
+      "capability": "file-edit",
+      "files": [
+        {
+          "name": "typing_extensions-4.15.0-py3-none-any.whl",
+          "url": "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/typing_extensions-4.15.0-py3-none-any.whl",
+          "size": 44613,
+          "hash": "sha256:4fec68770a05408e668a4fa53d6bf4f0f684b9dacf820c7c5d6e97d3ad225e29"
+        },
+        {
+          "name": "lxml-6.1.3-cp314-cp314-pyemscripten_2026_0_wasm32.whl",
+          "url": "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/lxml-6.1.3-cp314-cp314-pyemscripten_2026_0_wasm32.whl",
+          "size": 2145850,
+          "hash": "sha256:6a0b98f57a538cb6af4868c3499efec2bb52f7ed59fed94b7fbf195d6e40281f"
+        },
+        {
+          "name": "et_xmlfile-2.0.0-py3-none-any.whl",
+          "url": "https://files.pythonhosted.org/packages/c1/8b/5fe2cc11fee489817272089c4203e679c63b570a5aaeb18d852ae3cbba6a/et_xmlfile-2.0.0-py3-none-any.whl",
+          "size": 18059,
+          "hash": "sha256:7a91720bc756843502c3b7504c77b8fe44217c85c537d85037f0f536151b2caa"
+        },
+        {
+          "name": "openpyxl-3.1.5-py2.py3-none-any.whl",
+          "url": "https://files.pythonhosted.org/packages/c0/da/977ded879c29cbd04de313843e76868e6e13408a94ed6b987245dc7c8506/openpyxl-3.1.5-py2.py3-none-any.whl",
+          "size": 250910,
+          "hash": "sha256:5282c12b107bffeef825f4617dc029afaf41d0ea60823bbb665ef3079dc79de2"
+        },
+        {
+          "name": "python_docx-1.2.0-py3-none-any.whl",
+          "url": "https://files.pythonhosted.org/packages/d0/00/1e03a4989fa5795da308cd774f05b704ace555a70f9bf9d3be057b680bcf/python_docx-1.2.0-py3-none-any.whl",
+          "size": 252987,
+          "hash": "sha256:3fd478f3250fbbbfd3b94fe1e985955737c145627498896a8a6bf81f4baf66c7"
+        }
+      ]
+    }
+  }
 }
