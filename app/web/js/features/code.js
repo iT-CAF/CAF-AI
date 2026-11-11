@@ -6,6 +6,7 @@ import { EXT, guessFileName } from '../md.js';
 import { msgExtras } from '../chat.js';
 import { addPending, beforeSend, pending, addAttachItem, pickFiles, slashCommands, setInput, submit } from '../composer.js';
 import { runJS, runPython, mountPreview, LANG_KIND } from '../runners.js';
+import { cm, themeExt } from '../editor.js';
 
 window.I18N_ADD({
   ar: {
@@ -48,34 +49,7 @@ const BIN_EXT = /\.(png|jpe?g|gif|webp|ico|bmp|tiff?|psd|pdf|zip|gz|tgz|bz2|xz|7
 const tokens = (chars) => Math.ceil(chars / 3.5);
 const langOf = (name) => { const e = (name.split('.').pop() || '').toLowerCase(); return Object.entries(EXT).find(([, x]) => x === e)?.[0] || e || 'text'; };
 
-// ---------------- CodeMirror ----------------
-let CM = null;
-async function cm() {
-  if (!CM) CM = await import(`/vendor/codemirror/codemirror.min.mjs?v=${encodeURIComponent(state.info?.version || '')}`);
-  return CM;
-}
-function themeExt(C) {
-  const hl = C.HighlightStyle.define([
-    { tag: [C.tags.keyword, C.tags.controlKeyword, C.tags.moduleKeyword, C.tags.operatorKeyword], color: 'var(--syntax-keyword)' },
-    { tag: [C.tags.string, C.tags.special(C.tags.string), C.tags.regexp], color: 'var(--syntax-string)' },
-    { tag: [C.tags.number, C.tags.bool, C.tags.null, C.tags.atom], color: 'var(--syntax-number)' },
-    { tag: [C.tags.comment, C.tags.lineComment, C.tags.blockComment], color: 'var(--syntax-comment)', fontStyle: 'italic' },
-    { tag: [C.tags.function(C.tags.variableName), C.tags.function(C.tags.propertyName)], color: 'var(--secondary-text)' },
-    { tag: [C.tags.typeName, C.tags.className, C.tags.tagName], color: 'var(--accent-text)' },
-    { tag: [C.tags.attributeName, C.tags.propertyName], color: 'var(--copper-light)' },
-  ]);
-  return [C.syntaxHighlighting(hl), C.EditorView.theme({
-    '&': { height: '100%', fontSize: '13.5px', backgroundColor: 'var(--surface-sunken)', color: 'var(--syntax-plain)' },
-    '.cm-scroller': { fontFamily: 'var(--f-mono)', lineHeight: '1.7' },
-    '.cm-gutters': { backgroundColor: 'var(--surface-raised)', color: 'var(--text-muted)', border: 'none', borderRight: '1px solid var(--line)' },
-    '.cm-activeLine': { backgroundColor: 'color-mix(in srgb, var(--accent-fill) 6%, transparent)' },
-    '.cm-activeLineGutter': { backgroundColor: 'transparent', color: 'var(--accent-text)' },
-    '.cm-cursor': { borderLeftColor: 'var(--accent-fill)' },
-    '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection': { backgroundColor: 'color-mix(in srgb, var(--accent-fill) 30%, transparent) !important' },
-    '.cm-changedLine': { backgroundColor: 'color-mix(in srgb, var(--secondary) 14%, transparent) !important' },
-    '.cm-deletedChunk': { backgroundColor: 'color-mix(in srgb, var(--signal) 16%, transparent) !important' },
-  })];
-}
+// ---------------- CodeMirror (مشترك في ../editor.js) ----------------
 
 // ---------------- اللوحة الجانبية ----------------
 const cv = { doc: null, view: null, langC: null, diffC: null, wrapC: null, diff: false, preview: null, dirty: false, busy: false };

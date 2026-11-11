@@ -29,6 +29,7 @@ export const ICONS = {
   maximize: 'maximize-2', minimize: 'minimize-2', external: 'external-link', sheet: 'file-spreadsheet', filecode: 'file-code-2', clock: 'clock',
   loader: 'loader-circle', desktop: 'monitor', tablet: 'tablet', mobile: 'smartphone', sun: 'sun', moon: 'moon', menu: 'menu', up: 'arrow-up', down: 'arrow-down',
   ok: 'circle-check', fail: 'circle-x', filedown: 'file-down', database: 'server', chevron: 'chevron-down', help: 'circle-help', keyboard: 'keyboard', rocket: 'rocket', lifebuoy: 'life-buoy',
+  reset: 'rotate-ccw', zap: 'zap', slash: 'square-slash', split: 'columns-2', info: 'info', filepen: 'file-pen-line', tag: 'tag',
 };
 export const iconUrl = (name) => (ICONS[name] ? `/brand/icons/ui/${ICONS[name]}.svg` : `/brand/icons/${name}.svg`);
 export const ic = (name, cls = '') => `<span class="ic ${cls}" style="--i:url(${iconUrl(name)})" aria-hidden="true"></span>`;

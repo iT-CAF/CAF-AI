@@ -60,3 +60,36 @@ test('chat injects the chosen skill and reports it in meta', async () => {
     assert.ok(list.json.skills.length >= 28);
   } finally { await S.stop(); }
 });
+
+test('edit a bundled skill → saved as an override, original untouched, reset restores it', () => {
+  const orig = skills.get('caf/code-reviewer');
+  const origRaw = fs.readFileSync(orig.file, 'utf8');
+  const s = skills.save('caf/code-reviewer', { nameAr: 'مراجع الكود: المحترف', nameEn: orig.nameEn, description: 'يراجع الكود # بدقة', emoji: '🔍', triggers: ['راجع الكود', 'code review'], command: 'review', workspaces: ['code'] }, '# مراجعة\nنص جديد');
+  assert.equal(s.id, 'caf/code-reviewer', 'id is stable');
+  assert.equal(s.edited, true); assert.equal(s.nameAr, 'مراجع الكود: المحترف'); assert.equal(s.description, 'يراجع الكود # بدقة');
+  assert.deepEqual(s.triggers, ['راجع الكود', 'code review']); assert.deepEqual(s.workspaces, ['code']);
+  assert.equal(s.body, '# مراجعة\nنص جديد');
+  assert.equal(fs.readFileSync(orig.file, 'utf8'), origRaw, 'bundled file is never modified');
+  assert.ok(s.file.startsWith(skills.USER), 'override lives in CAF_HOME');
+  const r = skills.removeSkill('caf/code-reviewer');
+  assert.equal(r.reset, true); assert.equal(skills.get('caf/code-reviewer').edited, undefined);
+  assert.throws(() => skills.removeSkill('caf/code-reviewer'), { code: 'BUNDLED' });
+});
+
+test('edit keeps unknown agent keys, validation is explicit (no silent truncation), create and delete', () => {
+  const src = fs.mkdtempSync(path.join(os.tmpdir(), 'agents2-'));
+  fs.writeFileSync(path.join(src, 'growth.md'), '---\nname: Growth Hacker\ndescription: Grows things\ncolor: green\nemoji: 🚀\nvibe: Fast.\n---\n# Growth\nBody');
+  skills.importFolder(src, 'agency2');
+  const s = skills.save('agency2/growth-hacker', { nameAr: 'خبير النمو', nameEn: 'Growth Hacker', description: 'ينمّي المنتجات', emoji: '📈', triggers: [], command: '', workspaces: ['chat', 'code', 'docs', 'images'] }, '# Growth\nNew body');
+  const raw = fs.readFileSync(s.file, 'utf8');
+  assert.match(raw, /^color: green$/m); assert.match(raw, /^vibe: Fast\.$/m); assert.match(raw, /^emoji: 📈$/m);
+  assert.match(raw, /^name: Growth Hacker$/m); assert.match(raw, /ar-name: خبير النمو/);
+  assert.equal(s.nameAr, 'خبير النمو'); assert.equal(s.emoji, '📈');
+  assert.throws(() => skills.save('agency2/growth-hacker', { nameAr: 'x', description: 'd'.repeat(1025), workspaces: ['chat'] }, 'b'), (e) => e.code === 'INVALID' && e.errors.description === 'too_long');
+  assert.throws(() => skills.save('agency2/growth-hacker', { nameAr: 'x', description: 'ok', command: 'Bad Cmd', workspaces: [] }, ''), (e) => e.errors.command === 'bad_command' && e.errors.workspaces === 'required' && e.errors.body === 'required');
+  const n = skills.create({ nameAr: 'مساعد العقود', nameEn: 'Contract Helper', description: 'يكتب العقود', emoji: '📜', triggers: ['عقد'], command: 'contract', workspaces: ['chat', 'docs'] }, '# العقود\nاكتب عقدًا واضحًا.');
+  assert.equal(n.id, 'my-skills/contract-helper'); assert.equal(n.command, 'contract');
+  assert.equal(skills.create({ nameAr: 'مساعد العقود', nameEn: 'Contract Helper', description: 'x', workspaces: ['chat'] }, 'b').id, 'my-skills/contract-helper-2', 'no overwrite');
+  assert.equal(skills.removeSkill('my-skills/contract-helper').removed, true);
+  assert.equal(skills.get('my-skills/contract-helper'), null);
+});

@@ -9,9 +9,25 @@ module.exports = function routes(r) {
     const st = skills.state(); const dis = new Set(st.disabled);
     send(c.res, 200, { auto: st.auto, userDir: skills.USER, skills: skills.all({ fresh: c.url.searchParams.get('fresh') === '1' }).map((s) => skills.summary(s, dis)) });
   });
+  const dis = () => new Set(skills.state().disabled);
+  const editErr = (res, e) => (e.code === 'INVALID' ? send(res, 400, { error: 'skill_invalid', fields: e.errors })
+    : e.code === 'NOT_FOUND' ? fail(res, 404, 'not_found') : e.code === 'BUNDLED' ? fail(res, 400, 'skill_bundled') : fail(res, 403, 'forbidden'));
   r.add('GET', '/api/skills/item', (c) => {
     const s = skills.get(c.url.searchParams.get('id') || '');
-    return s ? send(c.res, 200, { ...skills.summary(s, new Set(skills.state().disabled)), body: s.body }) : fail(c.res, 404, 'not_found');
+    return s ? send(c.res, 200, skills.detail(s, dis())) : fail(c.res, 404, 'not_found');
+  });
+  // تعديل مهارة: { id, fields: { nameAr, nameEn, description, emoji, triggers[], command, workspaces[] }, body }
+  r.add('PUT', '/api/skills/item', async (c) => {
+    const b = await readJson(c.req, 512 * 1024);
+    try { send(c.res, 200, skills.detail(skills.save(String(b.id || ''), b.fields || {}, b.body), dis())); } catch (e) { editErr(c.res, e); }
+  });
+  r.add('POST', '/api/skills/new', async (c) => {
+    const b = await readJson(c.req, 512 * 1024);
+    try { send(c.res, 200, skills.detail(skills.create(b.fields || {}, b.body), dis())); } catch (e) { editErr(c.res, e); }
+  });
+  // المستوردة: حذف. المدمجة المعدّلة: استعادة النسخة الأصلية
+  r.add('DELETE', '/api/skills/item', (c) => {
+    try { const r2 = skills.removeSkill(c.url.searchParams.get('id') || ''); send(c.res, 200, r2.skill ? { ...r2, skill: skills.detail(r2.skill, dis()) } : r2); } catch (e) { editErr(c.res, e); }
   });
   r.add('PUT', '/api/skills/state', async (c) => {
     const b = await readJson(c.req);
