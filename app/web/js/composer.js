@@ -20,6 +20,7 @@ export function clearPending() { while (pending.length) pending.pop().remove?.()
 
 export function renderTray() {
   const tray = $('tray'); if (!tray) return;
+  setTimeout(() => window.dispatchEvent(new Event('caf:pending')), 0);
   tray.classList.toggle('hidden', !pending.length);
   tray.innerHTML = pending.map((p) => `<div class="att att-${p.kind}${p.busy ? ' busy' : ''}" data-key="${esc(p.key)}">${p.thumb ? `<img src="${esc(p.thumb)}" alt="">` : ic(p.kind === 'folder' ? 'folder' : 'file')}<span class="att-l" dir="auto" title="${esc(p.title || p.label)}">${esc(p.label)}</span>${p.note ? `<small class="att-n">${esc(p.note)}</small>` : ''}<button type="button" class="mini att-x" data-unpend="${esc(p.key)}" aria-label="${esc(t('remove'))} ${esc(p.label)}">${ic('close')}</button></div>`).join('');
 }

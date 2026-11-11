@@ -58,6 +58,28 @@ function thinkValue(setting, caps, catEntry) {
   return undefined; // تلقائي: سلوك النموذج الافتراضي
 }
 
+// الصور المرفقة: تُحمَّل من مجلد المحادثة كـ base64 (آخر 4 رسائل فيها صور فقط لتوفير السياق)
+const MAX_IMAGE_TURNS = 4;
+function mapMessages(raw, { chatId, vision }) {
+  let imageTurns = 0;
+  const out = [];
+  for (let i = raw.length - 1; i >= 0; i--) {
+    const m = raw[i];
+    const msg = { role: ['user', 'assistant', 'system'].includes(m.role) ? m.role : 'user', content: String(m.content ?? '') };
+    const ids = Array.isArray(m.images) ? m.images.filter((x) => typeof x === 'string') : [];
+    if (ids.length && m.role === 'user') {
+      if (vision && imageTurns < MAX_IMAGE_TURNS && chatId) {
+        const imgs = ids.map((id) => store.attachmentBase64(chatId, id)).filter(Boolean);
+        if (imgs.length) { msg.images = imgs; imageTurns++; }
+      } else {
+        msg.content = `[${ids.length} صورة مرفقة]\n` + msg.content;
+      }
+    }
+    out.unshift(msg);
+  }
+  return out;
+}
+
 function lastUserText(messages) {
   for (let i = messages.length - 1; i >= 0; i--) if (messages[i].role === 'user') return String(messages[i].content || '');
   return '';
@@ -95,7 +117,7 @@ function createChat(hooks = {}) {
       throw new ChatError('model_no_vision', 400, { model, alternatives: installed.filter((m) => hasCap(m.capabilities, 'vision')).map((m) => m.name), suggest: suggestFor('vision', installed) });
     }
 
-    const messages = hooks.mapMessages ? await hooks.mapMessages(raw, { body, caps }) : raw.map((m) => ({ role: ['user', 'assistant', 'system'].includes(m.role) ? m.role : 'user', content: String(m.content ?? '') }));
+    const messages = hooks.mapMessages ? await hooks.mapMessages(raw, { body, caps }) : mapMessages(raw, { chatId: body.chatId, vision: hasCap(caps, 'vision') });
     const lang = detectLang(text) || (settings.lang === 'ar' && !text ? 'ar' : null);
     if (lang) {
       for (let i = messages.length - 1; i >= 0; i--) {
@@ -213,4 +235,4 @@ function mapChatError(e) {
   return m;
 }
 
-module.exports = { createChat, mapChatError, thinkValue, ChatError, CODE_PROMPT_AR, detectLang, FOREIGN };
+module.exports = { createChat, mapChatError, thinkValue, ChatError, CODE_PROMPT_AR, detectLang, FOREIGN, mapMessages };

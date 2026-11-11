@@ -165,7 +165,21 @@ function attachmentBase64(chatId, attId) {
   return f ? fs.readFileSync(f).toString('base64') : null;
 }
 
+// صيانة عند التشغيل: مرفقات محادثات لم تُحفظ أبدًا (أُرفقت ثم أُغلقت الصفحة) وعمرها أكثر من يومين
+function cleanOrphanAttachments(maxAgeMs = 2 * 86400000) {
+  let removed = 0;
+  let dirs = [];
+  try { dirs = fs.readdirSync(P.attachments, { withFileTypes: true }); } catch { return 0; }
+  for (const d of dirs) {
+    if (!d.isDirectory() || !isId(d.name) || fs.existsSync(chatFile(d.name))) continue;
+    const full = path.join(P.attachments, d.name);
+    try { if (Date.now() - fs.statSync(full).mtimeMs > maxAgeMs) { fs.rmSync(full, { recursive: true, force: true }); removed++; } } catch { /* */ }
+  }
+  return removed;
+}
+
 module.exports = {
+  cleanOrphanAttachments,
   CHAT_VERSION, ROLES, DEFAULT_SETTINGS, sanitizeSettings, readSettings, writeSettings,
   normalizeChat, listChats, getChat, saveChat, deleteChat, deleteAllChats, chatFile,
   sniffImage, decodeDataUrl, saveAttachment, attachmentPath, attachmentBase64,

@@ -259,7 +259,8 @@ export function bindChat() {
     if (item) openChat(item.dataset.id);
   };
   $('chatList').addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.classList.contains('chat-item')) openChat(e.target.dataset.id); });
-  $('msgs').addEventListener('toggle', (e) => { if (e.target.matches('details.think')) e.target.dataset.user = '1'; }, true);
+  // نعتبر الطيّ/الفتح اختيار المستخدم فقط عند النقر الفعلي (وليس عند فتحه برمجيًا أثناء البث)
+  $('msgs').addEventListener('click', (e) => { const sm = e.target.closest('details.think > summary'); if (sm) sm.parentElement.dataset.user = '1'; });
   $('msgs').addEventListener('click', async (e) => {
     const cp = e.target.closest('[data-copy]');
     if (cp) {

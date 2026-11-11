@@ -102,6 +102,7 @@ async function main() {
     const m = migrate((s) => log.info(s));
     if (m.changed) log.info('data migrated', m);
   } catch (e) { log.error('migration failed', { err: String(e.stack || e) }); }
+  try { const n = require('./lib/store').cleanOrphanAttachments(); if (n) log.info('orphan attachments removed', { n }); } catch { /* */ }
   const noOpen = process.argv.includes('--no-open') || process.env.CAF_NO_BROWSER;
   const preferred = parseInt(process.env.CAF_PORT, 10) || 3737;
 

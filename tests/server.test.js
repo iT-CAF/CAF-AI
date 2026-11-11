@@ -144,3 +144,23 @@ test('language guard: Chinese in an Arabic answer triggers one retry, then gets 
   assert.ok(calls[1].body.options.temperature <= 0.3, 'retry runs cooler');
   assert.match(calls[1].body.messages[0].content, /بالعربية فقط/);
 });
+
+test('vision: images go to vision models only, auto-routing picks one', async () => {
+  const id = '77777777-2222-3333-4444-555555555555';
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+  const up = await S.api('POST', `/api/chats/${id}/attachments?name=a.png`, { body: png, headers: { 'Content-Type': 'image/png' } });
+  const msg = [{ role: 'user', content: 'صف الصورة', images: [up.json.id] }];
+  // يدويًا مع نموذج لا يرى الصور: خطأ واضح مع البدائل
+  const bad = await S.api('POST', '/api/chat', { body: { model: 'qwen2.5:7b', chatId: id, messages: msg } });
+  assert.equal(bad.status, 400);
+  assert.equal(bad.json.error, 'model_no_vision');
+  assert.deepEqual(bad.json.alternatives, ['qwen3.5:4b']);
+  // تلقائي: يختار نموذج الرؤية ويرسل الصورة base64
+  const ok = await S.api('POST', '/api/chat', { body: { model: 'auto', chatId: id, messages: msg } });
+  const lines = parseNdjson(ok.text);
+  assert.equal(lines[0].meta.route, 'vision');
+  assert.equal(lines[0].meta.model, 'qwen3.5:4b');
+  assert.match(lines.map((l) => l.message?.content || '').join(''), /\[images:1\]/);
+  const sent = S.mock.calls.filter((c) => c.path === '/api/chat').at(-1).body;
+  assert.equal(sent.messages.at(-1).images[0], png.toString('base64'));
+});

@@ -479,3 +479,19 @@ sup.cite{font:600 11px var(--f-mono);color:var(--accent-text);cursor:pointer;pad
 .canvas.preview-max .cv-editor,.canvas.preview-max .cv-ask{display:none}
 .canvas.preview-max .cv-out{flex:1}
 .cv-out .run-status{margin-inline-start:4px}
+
+/* ---------- الصور (الرؤية) ---------- */
+.msg-images{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 8px}
+.msg-img{padding:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface-raised);cursor:zoom-in;line-height:0;max-width:260px}
+.msg-img img{max-width:260px;max-height:220px;width:auto;height:auto;object-fit:cover;display:block}
+.msg-img:hover{border-color:var(--accent)}
+.img-viewer{width:auto;max-width:94vw;max-height:94vh;padding:0;background:transparent;border:0;box-shadow:none}
+.img-viewer::backdrop{background:rgba(5,7,8,.85)}
+.img-viewer img{max-width:92vw;max-height:88vh;border-radius:10px;display:block}
+.img-viewer form{position:fixed;top:14px;inset-inline-end:14px}
+.img-viewer .btn{background:var(--surface-raised);color:var(--text)}
+.drop-overlay{position:absolute;inset:8px;z-index:30;border:2px dashed var(--accent);border-radius:16px;background:color-mix(in srgb,var(--surface) 82%,transparent);backdrop-filter:blur(3px);display:grid;place-items:center;pointer-events:none}
+.drop-overlay div{display:flex;flex-direction:column;align-items:center;gap:10px;font:600 18px var(--f-ui);color:var(--accent-text)}
+.drop-overlay .ic{width:34px;height:34px}
+.vision-quick button{border-color:color-mix(in srgb,var(--secondary) 45%,var(--line))}
+.view-chat{position:relative}
