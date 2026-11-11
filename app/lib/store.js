@@ -15,7 +15,7 @@ const DEFAULT_SETTINGS = {
   // v2
   modelsByRole: { chat: '', code: '', vision: '', embed: '', image: '', stt: '', tts: '' },
   think: 'auto', codeSystemPrompt: '', imageMaxDim: 1536, imageQuality: 0.85,
-  voiceEnabled: false, apiEnabled: true, wrapCode: false, ragTopK: 6, showThinking: true,
+  voiceEnabled: false, apiEnabled: false, wrapCode: false, ragTopK: 6, showThinking: true,
 };
 const clamp = (v, lo, hi, d) => { const n = Number(v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : d; };
 const str = (v, max) => String(v ?? '').slice(0, max);

@@ -76,6 +76,22 @@ function startMock({ models = DEFAULT_MODELS, port = 0 } = {}) {
         let k = 0; const tick = () => { if (k >= parts.length) return end(); res.write(JSON.stringify({ model: j.model, message: { role: 'assistant', content: parts[k++] }, done: false }) + '\n'); setTimeout(tick, slow); }; tick();
         return;
       }
+      // واجهة Ollama المتوافقة مع OpenAI (‎/v1‎)
+      if (req.url === '/v1/chat/completions') {
+        const m = state.models.find((x) => x.name === j.model);
+        if (!m) return json(404, { error: { message: `model "${j.model}" not found`, type: 'api_error' } });
+        const lastU = [...(j.messages || [])].reverse().find((x) => x.role === 'user') || {};
+        const text = `v1(${j.model}): ${typeof lastU.content === 'string' ? lastU.content : (lastU.content || []).map((p) => p.type).join('+')}`;
+        if (!j.stream) return json(200, { id: 'chatcmpl-1', object: 'chat.completion', created: 1, model: j.model, choices: [{ index: 0, message: { role: 'assistant', content: text }, finish_reason: 'stop' }], usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 } });
+        res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+        for (const part of text.match(/.{1,6}/gs)) res.write(`data: ${JSON.stringify({ id: 'chatcmpl-1', object: 'chat.completion.chunk', created: 1, model: j.model, choices: [{ index: 0, delta: { content: part }, finish_reason: null }] })}\n\n`);
+        res.write(`data: ${JSON.stringify({ id: 'chatcmpl-1', object: 'chat.completion.chunk', created: 1, model: j.model, choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] })}\n\n`);
+        return res.end('data: [DONE]\n\n');
+      }
+      if (req.url === '/v1/embeddings') {
+        const input = Array.isArray(j.input) ? j.input : [j.input];
+        return json(200, { object: 'list', model: j.model, data: input.map((t, i) => ({ object: 'embedding', index: i, embedding: vec(t) })), usage: { prompt_tokens: 3, total_tokens: 3 } });
+      }
       json(404, { error: 'not found' });
     });
   });
