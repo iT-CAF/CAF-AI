@@ -115,6 +115,7 @@ function autoSelect(text, workspace = 'chat') {
   const qTok = new Set(rag.tokens(text));
   let best = null;
   for (const s of enabled()) {
+    if (!s.workspaces.includes(workspace)) continue; // مهارة الكتابة لا تتدخل في طلب برمجي، والعكس
     let score = 0;
     for (const tr of s.triggers) { const n = rag.normalize(tr); if (n && norm.includes(n)) score += n.length > 3 ? 3 : 2; }
     if (s.source !== 'caf') {
@@ -123,7 +124,6 @@ function autoSelect(text, workspace = 'chat') {
       score += hit >= 2 ? hit * 0.8 : 0;
     }
     if (!score) continue;
-    if (s.workspaces.includes(workspace)) score += 1;
     if (s.source === 'caf') score += 0.5; // المهارات العربية المدمجة أولًا عند التساوي
     if (!best || score > best.score) best = { s, score };
   }

@@ -55,7 +55,14 @@ function inline(s) {
 }
 
 const PREVIEWABLE = new Set(['html', 'htm', 'svg']);
-function codeBlock(lang, code, { open, before = '' }) {
+// ملف «حقيقي» يستحق بطاقة + لوحة جانبية (وليس أمر طرفية قصيرًا أو مخرجات)
+const NOT_FILE = new Set(['', 'text', 'txt', 'plaintext', 'bash', 'sh', 'shell', 'zsh', 'console', 'powershell', 'ps1', 'cmd', 'bat', 'output', 'diff', 'mermaid', 'log']);
+export const ART_MIN_LINES = 6;
+export const isArtifact = (lang, lines) => !NOT_FILE.has(String(lang || '').toLowerCase()) && lines >= ART_MIN_LINES;
+const LANG_LABEL = { javascript: 'JavaScript', js: 'JavaScript', mjs: 'JavaScript', jsx: 'JSX', typescript: 'TypeScript', ts: 'TypeScript', tsx: 'TSX', python: 'Python', py: 'Python', html: 'HTML', htm: 'HTML', css: 'CSS', scss: 'SCSS', json: 'JSON', php: 'PHP', sql: 'SQL', java: 'Java', cpp: 'C++', 'c++': 'C++', c: 'C', go: 'Go', rust: 'Rust', xml: 'XML', svg: 'SVG', markdown: 'Markdown', md: 'Markdown', vue: 'Vue', swift: 'Swift', kotlin: 'Kotlin', csharp: 'C#', cs: 'C#', ruby: 'Ruby', rb: 'Ruby', dart: 'Dart', yaml: 'YAML', yml: 'YAML' };
+const langLabel = (l) => LANG_LABEL[l] || l.toUpperCase();
+const ART_KIND = (l) => (PREVIEWABLE.has(l) ? 'html' : RUNNABLE.has(l) ? 'run' : 'file');
+function codeBlock(lang, code, { open, before = '', artifacts }) {
   const l = (lang || '').toLowerCase();
   if (l === 'mermaid' && !open) return `<div class="mermaid-box" data-src="${esc(code)}"><pre class="mermaid-src">${esc(code)}</pre></div>`;
   const lines = code.split('\n').length;
@@ -70,16 +77,21 @@ function codeBlock(lang, code, { open, before = '' }) {
     + `<button type="button" class="mini" data-copy>${ic('copy')}<span>${esc(t('copy'))}</span></button></span></div>`
     + `<div class="code-wrap"><pre class="gutter" aria-hidden="true">${Array.from({ length: lines }, (_, i) => i + 1).join('\n')}</pre><pre class="src"><code class="${l ? 'language-' + esc(l) : ''}">${esc(code)}</code></pre></div></div>`;
   // مساحة الكود: صفحات HTML تظهر كبطاقة ملف (المعاينة في اللوحة الجانبية) بدل كتلة طويلة
-  if (state.workspace === 'code' && PREVIEWABLE.has(l) && lines >= 8) {
+  // طلبات البرمجة: كل ملف يظهر كبطاقة (اسم، لغة، أسطر، حالة) ويُكتب حيًا في اللوحة الجانبية بدل كتلة طويلة داخل المحادثة
+  if ((artifacts ?? state.workspace === 'code') && isArtifact(l, lines)) {
     const name = guessFileName(code, l, before);
-    return `<div class="artifact${open ? ' writing' : ''}" data-lang="${esc(l)}"><div class="art-head"><span class="art-ic">${ic('filecode')}</span><div class="art-meta"><b dir="ltr">${esc(name)}</b><small>${esc(l.toUpperCase())} · ${esc(t('nLines', { n: lines }))} · <span class="art-state">${esc(t(open ? 'writingNow' : 'readyNow'))}</span></small></div>`
-      + `<div class="art-acts"><button type="button" class="btn small primary" data-artopen${open ? ' disabled' : ''}>${ic('eye')}<span>${esc(t('previewTab'))}</span></button><button type="button" class="btn small" data-artcode aria-expanded="false">${ic('code')}<span>${esc(t('codeTab'))}</span></button><button type="button" class="btn small icon-only" data-dl title="${esc(t('downloadFile'))}" aria-label="${esc(t('downloadFile'))}">${ic('download')}</button></div></div>`
-      + `<div class="art-code" hidden>${block}</div></div>`;
+    const kind = ART_KIND(l);
+    const primary = kind === 'html' ? `<button type="button" class="btn small primary" data-artopen${open ? ' disabled' : ''}>${ic('eye')}<span>${esc(t('previewTab'))}</span></button>`
+      : kind === 'run' ? `<button type="button" class="btn small primary" data-artrun${open ? ' disabled' : ''}>${ic('play')}<span>${esc(t('run'))}</span></button>` : '';
+    return `<div class="artifact art-${kind}${open ? ' writing' : ''}" data-lang="${esc(l)}" data-name="${esc(name)}"><div class="art-head"><button type="button" class="art-ic" data-artedit title="${esc(t('openCanvas'))}" aria-label="${esc(t('openCanvas'))}">${ic(kind === 'html' ? 'globe' : kind === 'run' ? 'terminal' : 'filecode')}</button>`
+      + `<div class="art-meta"><b dir="ltr">${esc(name)}</b><small><span class="art-lang">${esc(langLabel(l))}</span> · ${esc(t('nLines', { n: lines }))} · <span class="art-state">${open ? '<i class="spin"></i>' : ''}${esc(t(open ? 'writingNow' : 'readyNow'))}</span></small></div>`
+      + `<div class="art-acts">${primary}<button type="button" class="btn small${primary ? '' : ' primary'}" data-artedit${open ? ' disabled' : ''}>${ic('panel')}<span>${esc(t('artCanvas'))}</span></button><button type="button" class="btn small icon-only" data-artcode aria-expanded="false" title="${esc(t('codeTab'))}" aria-label="${esc(t('codeTab'))}">${ic('code')}</button><button type="button" class="btn small icon-only" data-dl title="${esc(t('downloadFile'))}" aria-label="${esc(t('downloadFile'))}">${ic('download')}</button></div></div>`
+      + (open ? `<div class="art-progress"><i></i></div>` : '') + `<div class="art-code" hidden>${block}</div></div>`;
   }
   return block;
 }
 
-export function renderMd(src, { live = false } = {}) {
+export function renderMd(src, { live = false, artifacts } = {}) {
   const lines = String(src || '').replace(/\r\n/g, '\n').split('\n');
   const out = []; let i = 0;
   const isTable = (a, b) => a && b && a.includes('|') && /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/.test(b);
@@ -92,7 +104,7 @@ export function renderMd(src, { live = false } = {}) {
       while (i < lines.length && !lines[i].trim().startsWith(close)) buf.push(lines[i++]);
       const open = i >= lines.length; // الكتلة لم تُغلق بعد (أثناء البث)
       i++;
-      out.push(codeBlock(fence[2], buf.join('\n'), { open: live && open, before: out.length ? out[out.length - 1].replace(/<[^>]+>/g, '') : '' }));
+      out.push(codeBlock(fence[2], buf.join('\n'), { open: live && open, artifacts, before: out.length ? out[out.length - 1].replace(/<[^>]+>/g, '') : '' }));
       continue;
     }
     // رياضيات كتلية $$ … $$ أو \[ … \]

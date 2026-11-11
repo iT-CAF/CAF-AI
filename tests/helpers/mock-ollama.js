@@ -19,6 +19,15 @@ function vec(text, dim = 16) {
   const n = Math.hypot(...v) || 1; return v.map((x) => x / n);
 }
 
+const MULTIFILE = [
+  'إليك آلة حاسبة من ثلاثة ملفات.', '', '**الملف: `index.html`**', '```html', '<!DOCTYPE html>', '<html lang="ar" dir="rtl">', '<head>', '  <meta charset="UTF-8">', '  <title>آلة حاسبة</title>',
+  '  <link rel="stylesheet" href="style.css">', '</head>', '<body>', '  <div class="calc"><input id="d" readonly><div class="keys">', '    <button>1</button><button>2</button><button>+</button><button>=</button>', '  </div></div>',
+  '  <script src="script.js"></script>', '</body>', '</html>', '```', '', '**الملف: `style.css`**', '```css', 'body { display: grid; place-items: center; min-height: 100vh; margin: 0; background: #101418; }',
+  '.calc { background: #1b2229; padding: 18px; border-radius: 16px; }', '#d { width: 100%; font-size: 28px; text-align: left; }', '.keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }',
+  'button { font-size: 20px; padding: 14px; border-radius: 10px; border: 0; background: #e8a33d; }', '.ok { color: green; }', '```', '', '**الملف: `script.js`**', '```javascript', "const d = document.getElementById('d');", 'let expr = "";',
+  "document.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {", "  if (b.textContent === '=') { expr = String(eval(expr)); } else { expr += b.textContent; }", '  d.value = expr;', '}));', "console.log('ready');", '```', '', 'افتح المعاينة لتجربتها.',
+].join('\n');
+
 function startMock({ models = DEFAULT_MODELS, port = 0 } = {}) {
   const calls = [];
   const state = { models: [...models] };
@@ -58,9 +67,13 @@ function startMock({ models = DEFAULT_MODELS, port = 0 } = {}) {
         res.writeHead(200, { 'Content-Type': 'application/x-ndjson' });
         const thinkOn = j.think && j.think !== false && m.caps.includes('thinking');
         if (thinkOn) res.write(JSON.stringify({ model: j.model, message: { role: 'assistant', content: '', thinking: 'أفكر… ' }, done: false }) + '\n');
-        const reply = /CJK/.test(last.content) ? 'هذه إجابة 这是中文 بالعربية' : `echo(${j.model}): ${last.content}${last.images ? ` [images:${last.images.length}]` : ''}`;
-        for (const part of reply.match(/.{1,8}/gs) || []) res.write(JSON.stringify({ model: j.model, message: { role: 'assistant', content: part }, done: false }) + '\n');
-        res.end(JSON.stringify({ model: j.model, message: { role: 'assistant', content: '' }, done: true, eval_count: 20, eval_duration: 1e9, prompt_eval_count: 10 }) + '\n');
+        const reply = /CJK/.test(last.content) ? 'هذه إجابة 这是中文 بالعربية' : /MULTIFILE/.test(last.content) ? MULTIFILE : `echo(${j.model}): ${last.content}${last.images ? ` [images:${last.images.length}]` : ''}`;
+        const parts = reply.match(/.{1,8}/gs) || [];
+        const end = () => res.end(JSON.stringify({ model: j.model, message: { role: 'assistant', content: '' }, done: true, eval_count: 20, eval_duration: 1e9, prompt_eval_count: 10 }) + '\n');
+        // MULTIFILE يُبث ببطء (للاختبار البصري لكتابة الملفات حيًا في اللوحة)
+        const slow = /MULTIFILE/.test(last.content) ? 12 : 0;
+        if (!slow) { for (const part of parts) res.write(JSON.stringify({ model: j.model, message: { role: 'assistant', content: part }, done: false }) + '\n'); end(); return; }
+        let k = 0; const tick = () => { if (k >= parts.length) return end(); res.write(JSON.stringify({ model: j.model, message: { role: 'assistant', content: parts[k++] }, done: false }) + '\n'); setTimeout(tick, slow); }; tick();
         return;
       }
       json(404, { error: 'not found' });

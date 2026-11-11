@@ -7,6 +7,8 @@ import { renderMd, enhance, splitThink, dirOf, morph } from './md.js';
 export const msgExtras = [];
 export const msgActions = [];
 
+// طلبات البرمجة (مساحة الكود أو نية «كود» في المحادثة): الملفات تظهر كبطاقات وتُكتب حيًا في اللوحة الجانبية
+export const artifactMode = (m) => state.workspace === 'code' || m?.intent === 'code' || m?.route === 'code';
 const ROUTE_LABEL = { chat: 'routeChat', code: 'routeCode', vision: 'routeVision', image: 'routeImage', manual: 'routeManual' };
 const newChatId = () => uid().replace(/[^a-z0-9-]/g, '').slice(0, 36);
 
@@ -83,7 +85,7 @@ export function msgHtml(m, idx, live) {
   if (isUser) body = `<div class="user-text" dir="${dirOf(m.content)}">${esc(m.content)}</div>`;
   else if (m.errCode) body = errorBody(m);
   else if (!content && live) body = thinking ? '' : '<span class="typing"><i></i><i></i><i></i></span>';
-  else body = renderMd(content, { live }) + (live ? '<span class="cursor"></span>' : '');
+  else body = renderMd(content, { live, artifacts: artifactMode(m) }) + (live ? '<span class="cursor"></span>' : '');
   const extras = msgExtras.map((fn) => fn(m, idx, live)).join('');
   const stat = m.stat ? `<span class="stat">${esc(m.stat)}</span>` : '';
   const isLast = idx === state.chat.messages.length - 1;
@@ -149,7 +151,7 @@ function patchLive(idx) {
     if (!thinking && !body.querySelector('.typing')) body.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
     if (thinking) body.innerHTML = '';
   } else {
-    morph(body, renderMd(content, { live: true }) + '<span class="cursor"></span>');
+    morph(body, renderMd(content, { live: true, artifacts: artifactMode(m) }) + '<span class="cursor"></span>');
     enhance(body);
     emit('stream:update', { idx, msg: m, content });
   }
@@ -215,7 +217,7 @@ export async function send(text, opts = {}) {
     if (!r.ok) { let j = {}; try { j = await r.json(); } catch { /* */ } throw new ApiError(j.error || `http_${r.status}`, r.status, j); }
     await readNdjson(r, (j) => {
       if (j.meta) {
-        am.model = j.meta.model || ''; am.route = j.meta.auto ? j.meta.route : 'manual';
+        am.model = j.meta.model || ''; am.route = j.meta.auto ? j.meta.route : 'manual'; am.intent = j.meta.route || '';
         if (j.meta.sources) am.sources = j.meta.sources;
         if (j.meta.skills?.length) am.skills = j.meta.skills;
         if (j.meta.route === 'image') { am.route = 'image'; am.imagePrompt = j.meta.prompt; }

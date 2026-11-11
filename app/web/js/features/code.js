@@ -2,8 +2,8 @@
 // مساحة الكود: اللوحة الجانبية (CodeMirror 6) بالنسخ والفروق، «اطلب تعديل»، المعاينة الحية، التشغيل الآمن،
 // تنزيل الكود بالامتداد الصحيح، إرفاق ملفات ومجلد مشروع، والأوامر السريعة.
 import { state, $, t, esc, ic, uid, api, readNdjson, toast, on, emit, download, promptBox, confirmBox, errText, ApiError } from '../core.js';
-import { EXT, guessFileName } from '../md.js';
-import { msgExtras } from '../chat.js';
+import { EXT, guessFileName, isArtifact } from '../md.js';
+import { msgExtras, artifactMode } from '../chat.js';
 import { addPending, beforeSend, pending, addAttachItem, pickFiles, slashCommands, setInput, submit } from '../composer.js';
 import { runJS, runPython, mountPreview, LANG_KIND } from '../runners.js';
 import { cm, themeExt } from '../editor.js';
@@ -52,7 +52,7 @@ const langOf = (name) => { const e = (name.split('.').pop() || '').toLowerCase()
 // ---------------- CodeMirror (مشترك في ../editor.js) ----------------
 
 // ---------------- اللوحة الجانبية ----------------
-const cv = { doc: null, view: null, langC: null, diffC: null, wrapC: null, diff: false, preview: null, dirty: false, busy: false };
+const cv = { doc: null, view: null, langC: null, diffC: null, wrapC: null, diff: false, preview: null, dirty: false, busy: false, group: [], groupKey: '' };
 
 function canvasHtml() {
   return `<header class="cv-head">
@@ -63,6 +63,7 @@ function canvasHtml() {
       <button class="mini" id="cvMax" title="${esc(t('fullWidth'))}" aria-pressed="false">${ic('maximize')}</button>
       <button class="mini" id="cvClose" title="${esc(t('closeCanvas'))}" aria-label="${esc(t('closeCanvas'))}">${ic('close')}</button>
     </div>
+    <div class="cv-files" id="cvFiles" role="tablist" aria-label="${esc(t('filesInReply'))}" hidden></div>
     <div class="cv-row cv-row2">
       <div class="cv-tabs" role="tablist" aria-label="${esc(t('canvas'))}">
         <button type="button" role="tab" data-cvtab="preview" id="cvTabRun" aria-selected="false"></button>
@@ -98,7 +99,7 @@ function setTab(tab, { run = true } = {}) {
   if (tab === 'code') cv.view?.focus();
 }
 
-async function openCanvas({ content = '', lang = 'text', name = '', id = null, stream = false } = {}) {
+async function openCanvas({ content = '', lang = 'text', name = '', id = null, stream = false, group = [], groupKey = '' } = {}) {
   const C = await cm();
   const box = $('canvas');
   if (!box.dataset.ready) { box.innerHTML = canvasHtml(); box.dataset.ready = '1'; bindCanvas(); }
@@ -127,6 +128,8 @@ async function openCanvas({ content = '', lang = 'text', name = '', id = null, s
   });
   cv.diff = false; setDirty(false); showSel();
   cv.streaming = stream; $('cvWriting').classList.toggle('hidden', !stream);
+  cv.group = group; cv.groupKey = groupKey; renderFiles();
+  $('cvTabRun').classList.remove('pulse');
   setTab('code', { run: false });
   if (!stream) cv.view.focus();
 }
@@ -139,14 +142,55 @@ function streamInto(code) {
   cv.busy = false;
   cv.doc.versions[cv.doc.versions.length - 1].content = code;
 }
-async function endStream(code) {
+async function endStream(code, { show = true } = {}) {
   if (!cv.streaming) return;
   cv.streaming = false; $('cvWriting').classList.add('hidden');
   streamInto(code);
   setDirty(false);
-  await saveDoc();
-  setTab('preview');
+  const saving = saveDoc();
+  if (show) showResult();
+  await saving;
 }
+// بعد الكتابة: صفحات HTML تُعرض مباشرة، وJS/Python جاهزة للتشغيل بنقرة، وغيرها يبقى في المحرر
+function showResult() {
+  const k = runKind();
+  if (k === 'html') return setTab('preview');
+  setTab('code', { run: false });
+  if (k) { $('cvTabRun').classList.add('pulse'); toast(t('readyToRun'), 2600); }
+}
+
+// ---------- ملفات الرد الواحد: تبويبات داخل اللوحة + ربط CSS/JS بصفحة HTML عند المعاينة ----------
+const FILE_IC = (l) => (LANG_KIND(l) === 'html' ? 'globe' : LANG_KIND(l) ? 'terminal' : 'filecode');
+function renderFiles() {
+  const row = $('cvFiles'); if (!row) return;
+  const g = cv.group || [];
+  row.hidden = g.length < 2;
+  row.innerHTML = g.map((f, i) => `<button type="button" role="tab" data-file="${i}" aria-selected="${cv.doc && (f.id ? f.id === cv.doc.id : f.name === cv.doc.name)}" title="${esc(f.name)}">${ic(FILE_IC(f.lang))}<span dir="ltr">${esc(f.name)}</span>${f.writing ? '<i class="spin"></i>' : ''}</button>`).join('');
+  // تمييز بطاقة الملف المفتوح داخل المحادثة
+  document.querySelectorAll('.artifact.active').forEach((a) => a.classList.remove('active'));
+  if (cv.groupKey && cv.doc) document.querySelector(`.msg[data-i="${cv.groupKey}"]`)?.querySelectorAll('.artifact').forEach((a) => { if (a.dataset.name === cv.doc.name) a.classList.add('active'); });
+}
+async function openGroupFile(i) {
+  const f = cv.group[i]; if (!f || f.writing) return;
+  if (cv.dirty) await saveVersion();
+  const group = cv.group; const groupKey = cv.groupKey;
+  if (f.id) await openCanvas({ id: f.id, content: f.content, lang: f.lang, name: f.name, group, groupKey });
+  else { await openCanvas({ content: f.content, lang: f.lang, name: f.name, group, groupKey }); f.id = cv.doc.id; docIds.set(docKey(groupKey, f.name), f.id); }
+}
+const baseName = (n) => String(n || '').split(/[\\/]/).pop().toLowerCase();
+function assetsFor() {
+  const out = {};
+  for (const f of cv.group || []) if (cv.doc && f.name !== cv.doc.name) out[baseName(f.name)] = f.id === cv.doc?.id ? curText() : f.content;
+  return out;
+}
+// يضمّن ملفات CSS/JS من الرد نفسه داخل صفحة HTML (لأن المعاينة معزولة بلا شبكة ولا نظام ملفات)
+function inlineAssets(html, assets) {
+  if (!assets || !Object.keys(assets).length) return html;
+  return html
+    .replace(/<link\b[^>]*\bhref\s*=\s*["']([^"']+)["'][^>]*>/gi, (m, href) => { const c = assets[baseName(href)]; return c != null && /stylesheet|\.css/i.test(m) ? `<style>\n${c}\n</style>` : m; })
+    .replace(/<script\b([^>]*)\bsrc\s*=\s*["']([^"']+)["']([^>]*)>\s*<\/script>/gi, (m, a, src, b) => { const c = assets[baseName(src)]; return c != null ? `<script${(a + b).replace(/\s+defer|\s+async/gi, '')}>\n${c.replace(/<\/script/gi, '<\\/script')}\n</script>` : m; });
+}
+const previewCode = () => inlineAssets(curText(), assetsFor());
 function langExt(C, l) { const f = C.languages[l]; try { return f ? f() : []; } catch { return []; } }
 function closeCanvas() { $('canvas').classList.add('hidden'); document.body.classList.remove('canvas-open', 'cv-max'); cv.preview?.destroy(); cv.preview = null; cv.streaming = false; }
 const curText = () => cv.view?.state.doc.toString() || '';
@@ -212,7 +256,7 @@ function previewUi(body, code) {
     const d = e.target.closest('[data-dev]');
     if (d) { holder.style.maxWidth = DEVICES.find((x) => x[0] === d.dataset.dev)[1]; body.querySelectorAll('[data-dev]').forEach((b) => b.setAttribute('aria-pressed', String(b === d))); return; }
     const a = e.target.closest('[data-pv]'); if (!a) return;
-    if (a.dataset.pv === 'reload') { con.innerHTML = ''; n = 0; count.textContent = '0'; count.classList.remove('has-err'); cv.preview.update(curText()); }
+    if (a.dataset.pv === 'reload') { con.innerHTML = ''; n = 0; count.textContent = '0'; count.classList.remove('has-err'); cv.preview.update(previewCode()); }
     if (a.dataset.pv === 'console') { const on = a.getAttribute('aria-pressed') !== 'true'; a.setAttribute('aria-pressed', String(on)); con.classList.toggle('hidden', !on); }
     if (a.dataset.pv === 'max') $('cvMax').click();
   };
@@ -222,7 +266,7 @@ async function runCanvas() {
   const kind = LANG_KIND(cv.doc.lang) || LANG_KIND(cv.doc.name.split('.').pop());
   const code = curText();
   const body = $('cvOutBody'); body.innerHTML = '';
-  if (kind === 'html') { openOut(t('livePreview')); $('cvOutMeta').innerHTML = statusPill('ok', t('sandboxed')); previewUi(body, code); return; }
+  if (kind === 'html') { openOut(t('livePreview')); $('cvOutMeta').innerHTML = statusPill('ok', t('sandboxed')); previewUi(body, previewCode()); return; }
   body.classList.remove('is-preview');
   if (!kind) { openOut(t('output')); outLine(body, { type: 'warn', text: t('cannotRun') }); return; }
   openOut(kind === 'py' ? 'Python' : 'JavaScript');
@@ -278,6 +322,8 @@ function bindCanvas() {
   $('cvLang').onchange = async () => { const C = await cm(); cv.doc.lang = $('cvLang').value; cv.view.dispatch({ effects: cv.langC.reconfigure(langExt(C, cv.doc.lang)) }); updateRunTab(); saveDoc(); };
   $('cvVer').onchange = () => { const v = cv.doc.versions[+$('cvVer').value]; if (!v) return; setContent(v.content); setDirty(false); if (cv.diff) toggleDiff(true); };
   $('cvAskBtn').onclick = askEdit;
+  $('cvFiles').onclick = (e) => { const b = e.target.closest('[data-file]'); if (b) openGroupFile(+b.dataset.file); };
+  $('cvTabRun').addEventListener('click', () => $('cvTabRun').classList.remove('pulse'));
   $('cvAsk').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); askEdit(); } });
 }
 
@@ -288,7 +334,7 @@ function blockInfo(btn) {
   const code = box.querySelector('pre.src code').textContent;
   const lang = box.dataset.lang || '';
   const before = (art || box).previousElementSibling ? (art || box).previousElementSibling.textContent : '';
-  return { box, art, code, lang, name: art ? art.querySelector('.art-meta b').textContent : guessFileName(code, lang, before) };
+  return { box, art, code, lang, name: art ? art.dataset.name || art.querySelector('.art-meta b').textContent : guessFileName(code, lang, before) };
 }
 
 // معاينة داخل كتلة الكود نفسها (تبويب «المعاينة») — بلا نافذة ثانية
@@ -325,42 +371,96 @@ async function runInline(btn) {
   if (!res.lines.length) outLine(body, { type: 'muted', text: t('noOutput') });
 }
 
-// معاينة تلقائية: ردّ في مساحة الكود يحوي صفحة HTML كاملة يُفتح في اللوحة الجانبية مباشرة
-// ---------- وضع المحاكي: كتابة الصفحة حيًا في اللوحة ----------
-const HTML_FENCE = /```(html|htm|svg)[^\n]*\n([\s\S]*?)(```|$)/gi;
-let streamMsg = null; let opening = null; let latest = '';
-function lastHtmlBlock(content) {
-  let m; let last = null; HTML_FENCE.lastIndex = 0;
-  while ((m = HTML_FENCE.exec(content))) last = { lang: m[1].toLowerCase(), code: m[2], done: m[3] === '```' };
-  return last;
+// ---------- وضع المحاكي: كل ملف في رد برمجي يُكتب حيًا في اللوحة الجانبية ----------
+// يعمل في مساحة الكود، وفي المحادثة حين تكون نية الطلب «كود». البطاقة في المحادثة تبقى مختصرة والكود كاملًا في اللوحة.
+const CANVAS_LANG = { js: 'javascript', mjs: 'javascript', cjs: 'javascript', jsx: 'javascript', node: 'javascript', ts: 'typescript', tsx: 'typescript', py: 'python', python3: 'python', htm: 'html', svg: 'xml', md: 'markdown', 'c++': 'cpp', c: 'cpp', h: 'cpp', hpp: 'cpp', cc: 'cpp', scss: 'css', less: 'css', mysql: 'sql', postgres: 'sql', postgresql: 'sql' };
+const canvasLang = (l, name) => { const x = CANVAS_LANG[(l || '').toLowerCase()] || (l || '').toLowerCase(); if (LANGS.includes(x)) return x; const f = langOf(name || ''); return LANGS.includes(f) ? f : 'text'; };
+const docIds = new Map(); // «محادثة|رسالة|ملف» ← معرّف مستند اللوحة (لا نكرر إنشاء المستند عند كل نقرة)
+const docKey = (msgIdx, name) => `${state.chat?.id || ''}|${msgIdx}|${name}`;
+// الكتل المسوّرة بنفس قواعد العرض (السطر يبدأ بـ ``` أو ~~~)
+function fencedBlocks(content) {
+  const lines = String(content || '').replace(/\r\n/g, '\n').split('\n'); const out = []; let i = 0; let before = '';
+  while (i < lines.length) {
+    const f = lines[i].match(/^\s*(```+|~~~+)\s*([\w+#.-]*)/);
+    if (!f) { before += lines[i] + '\n'; i++; continue; }
+    const close = f[1][0].repeat(3); const buf = []; i++;
+    while (i < lines.length && !lines[i].trim().startsWith(close)) buf.push(lines[i++]);
+    const done = i < lines.length; i++;
+    out.push({ lang: (f[2] || '').toLowerCase(), code: buf.join('\n'), done, before: before.slice(-400) });
+    before = '';
+  }
+  return out;
 }
-function onStream({ msg, content }) {
-  if (state.workspace !== 'code' || !msg) return;
-  const b = lastHtmlBlock(content);
-  if (!b || b.code.split('\n').length < 4) return;
-  latest = b.code;
-  if (streamMsg !== msg) {
-    streamMsg = msg;
-    const nameM = /(?:الملف|File)\s*[:：]\s*\**\s*`?([\w.-]+\.(?:html?|svg))`?/i.exec(content);
-    opening = openCanvas({ content: latest, lang: b.lang === 'svg' ? 'xml' : 'html', name: nameM ? nameM[1] : (b.lang === 'svg' ? 'image.svg' : 'index.html'), stream: true }).then(() => { opening = null; streamInto(latest); });
+// حفظ ملف من ملفات الرد مباشرة (احتياط إن لم يكن هو المفتوح في اللوحة لحظة الانتقال)
+async function saveFile(f) {
+  if (!f) return;
+  if (!f.id) f.id = uid();
+  try { await api('PUT', '/api/canvas/' + f.id, { chatId: state.chat?.id || null, name: f.name, lang: f.lang, versions: [{ content: f.content, note: 'v1', at: Date.now() }] }); } catch { /* */ }
+}
+const fileBlocks = (content) => fencedBlocks(content).filter((b) => isArtifact(b.lang, b.code.split('\n').length));
+let live = null; // { msg, idx, cur, files:[{name,lang,content,id,writing}], opening }
+function onStream({ idx, msg, content }) {
+  if (!msg || !artifactMode(msg)) return;
+  const blocks = fileBlocks(content); if (!blocks.length) return;
+  if (!live || live.msg !== msg) live = { msg, idx, cur: -1, files: [], opening: null };
+  const i = blocks.length - 1; const b = blocks[i];
+  if (live.cur !== i) {
+    const prev = live.files[live.cur];
+    if (prev) { prev.content = blocks[live.cur].code; prev.writing = false; }
+    live.cur = i;
+    const name = guessFileName(b.code, b.lang, b.before);
+    const f = { name, lang: canvasLang(b.lang, name), content: b.code, id: null, writing: true };
+    live.files.push(f);
+    const L = live;
+    live.opening = Promise.resolve(L.opening).then(async () => {
+      // أنهِ الملف السابق (يُحفظ) قبل فتح التالي
+      if (prev && cv.streaming && cv.doc?.name === prev.name) await endStream(prev.content, { show: false });
+      else if (prev) await saveFile(prev);
+      await openCanvas({ content: f.content, lang: f.lang, name, stream: true, group: L.files, groupKey: String(idx) });
+      f.id = cv.doc.id; docIds.set(docKey(idx, name), f.id); streamInto(f.content);
+    });
+    live.opening.finally(() => { if (live === L) L.opening = null; });
     return;
   }
-  if (!opening && cv.streaming) streamInto(latest);
+  const f = live.files[i]; f.content = b.code;
+  if (!live.opening && cv.streaming && cv.doc?.name === f.name) streamInto(b.code);
 }
 
-function autoPreview(msg) {
-  if (msg && streamMsg === msg) {
-    streamMsg = null;
-    const b = lastHtmlBlock(msg.content || '');
-    Promise.resolve(opening).then(() => endStream(b ? b.code.replace(/\n$/, '') : latest));
+async function autoPreview(msg) {
+  if (msg && live && live.msg === msg) {
+    const L = live; live = null;
+    await L.opening;
+    const blocks = fileBlocks(msg.content || '');
+    L.files.forEach((f, i) => { if (blocks[i]) f.content = blocks[i].code.replace(/\n$/, ''); f.writing = false; });
+    const cur = L.files[L.files.length - 1];
+    if (cur && cv.streaming && cv.doc?.name === cur.name) await endStream(cur.content, { show: false });
+    else if (cur) await saveFile(cur);
+    // صفحة HTML ضمن ملفات الرد؟ اعرضها (مع CSS/JS المرافقة) — وإلا أظهر نتيجة الملف الحالي
+    const page = L.files.find((f) => LANG_KIND(f.lang) === 'html' && /<!DOCTYPE html|<html[\s>]|<body[\s>]/i.test(f.content));
+    if (page && cv.doc?.name !== page.name) { await openCanvas({ id: page.id, content: page.content, lang: page.lang, name: page.name, group: L.files, groupKey: String(L.idx) }); page.id = cv.doc.id; }
+    renderFiles();
+    showResult();
     return;
   }
-  if (state.workspace !== 'code' || !msg?.content) return;
-  const blocks = [...msg.content.matchAll(/```(html|htm)?\s*\n([\s\S]*?)```/gi)].map((m) => m[2]).filter((c) => /<!DOCTYPE html|<html[\s>]|<body[\s>]/i.test(c));
+  if (!msg?.content || !artifactMode(msg) || !$('canvas').classList.contains('hidden')) return;
+  // رد محفوظ/غير مبثوث: صفحة HTML كاملة تُفتح مباشرة
+  const blocks = fileBlocks(msg.content).filter((b) => /^(html|htm)$/.test(b.lang) && /<!DOCTYPE html|<html[\s>]|<body[\s>]/i.test(b.code));
   if (!blocks.length) return;
-  const code = blocks.sort((x, y) => y.length - x.length)[0];
-  const nameM = /(?:الملف|File)\s*[:：]\s*\**\s*`?([\w.-]+\.html?)`?/i.exec(msg.content);
-  openCanvas({ content: code, lang: 'html', name: nameM ? nameM[1] : 'index.html' }).then(runCanvas);
+  const b = blocks.sort((x, y) => y.code.length - x.code.length)[0];
+  openCanvas({ content: b.code, lang: 'html', name: guessFileName(b.code, 'html', b.before) }).then(runCanvas);
+}
+
+// فتح ملف من بطاقة داخل الرسالة، مع بقية ملفات الرد نفسه كتبويبات
+async function openFromCard(btn, tab) {
+  const msgEl = btn.closest('.msg'); const idx = msgEl?.dataset.i ?? '';
+  const cards = [...(msgEl?.querySelectorAll('.artifact') || [])];
+  const group = cards.map((a) => { const name = a.dataset.name; return { name, lang: canvasLang(a.dataset.lang, name), content: a.querySelector('pre.src code').textContent, id: docIds.get(docKey(idx, name)) || null }; });
+  const art = btn.closest('.artifact'); const i = Math.max(0, cards.indexOf(art));
+  const f = group[i]; if (!f) return;
+  if (cv.dirty) await saveVersion();
+  if (f.id) await openCanvas({ id: f.id, content: f.content, lang: f.lang, name: f.name, group, groupKey: String(idx) });
+  else { await openCanvas({ content: f.content, lang: f.lang, name: f.name, group, groupKey: String(idx) }); f.id = cv.doc.id; docIds.set(docKey(idx, f.name), f.id); }
+  if (tab === 'preview') setTab('preview');
 }
 
 // ---------------- إرفاق ملفات الكود ومجلد المشروع ----------------
@@ -452,11 +552,11 @@ export function init() {
     ar: { cannotRun: 'التشغيل المباشر متاح لـ JavaScript وPython وHTML فقط.', dev_desktop: 'سطح المكتب', dev_tablet: 'تابلت', dev_mobile: 'جوال', reload: 'إعادة التحميل', fullPreview: 'معاينة بالمساحة كاملة',
       console: 'Console', externalBlocked: 'هذه الصفحة تطلب ملفات من الإنترنت (CDN أو صور خارجية). المعاينة معزولة وبلا شبكة، لذلك قد تظهر بدون تنسيقها. اطلب من كآف AI نسخة مضمّنة بالكامل.',
       codeTab: 'الكود', previewTab: 'المعاينة', outputTab: 'التشغيل', nLines: '{n} سطر', writingNow: 'يكتب الآن…', readyNow: 'جاهز', fullWidth: 'عرض كامل',
-      sandboxed: 'معزولة · بلا شبكة', timedOut: 'تجاوز المهلة', runFailed: 'انتهى بخطأ', noOutput: '(لا توجد مخرجات)', copyOutput: 'نسخ المخرجات', rerun: 'إعادة التشغيل' },
+      sandboxed: 'معزولة · بلا شبكة', readyToRun: 'جاهز — اضغط «التشغيل»', filesInReply: 'ملفات هذا الرد', timedOut: 'تجاوز المهلة', runFailed: 'انتهى بخطأ', noOutput: '(لا توجد مخرجات)', copyOutput: 'نسخ المخرجات', rerun: 'إعادة التشغيل' },
     en: { cannotRun: 'Direct run is available for JavaScript, Python and HTML only.', dev_desktop: 'Desktop', dev_tablet: 'Tablet', dev_mobile: 'Phone', reload: 'Reload', fullPreview: 'Full-size preview',
       console: 'Console', externalBlocked: 'This page requests files from the internet (CDN or external images). The preview is sandboxed with no network, so it may look unstyled. Ask CAF AI for a fully self-contained version.',
       codeTab: 'Code', previewTab: 'Preview', outputTab: 'Run', nLines: '{n} lines', writingNow: 'Writing…', readyNow: 'Ready', fullWidth: 'Full width',
-      sandboxed: 'sandboxed · no network', timedOut: 'Timed out', runFailed: 'Ended with an error', noOutput: '(no output)', copyOutput: 'Copy output', rerun: 'Run again' },
+      sandboxed: 'sandboxed · no network', readyToRun: 'Ready — press “Run”', filesInReply: 'Files in this reply', timedOut: 'Timed out', runFailed: 'Ended with an error', noOutput: '(no output)', copyOutput: 'Copy output', rerun: 'Run again' },
   });
   addAttachItem({ id: 'code-files', icon: 'code', label: () => t('attachCode'), run: () => attachFiles(false) });
   addAttachItem({ id: 'code-folder', icon: 'folder', label: () => t('attachFolder'), run: () => attachFiles(true) });
@@ -471,7 +571,8 @@ export function init() {
   slashCommands.push({ cmd: 'code', label: () => t('wsCode'), run: (rest) => { emit('workspace:set', 'code'); if (rest.trim()) { setInput(rest); submit(); } return true; } });
   on('msgs:click', (e) => {
     const tab = e.target.closest('[data-cbtab]'); if (tab) return inlinePreview(tab);
-    const ao = e.target.closest('[data-artopen]'); if (ao) { const b = blockInfo(ao); return openCanvas({ content: b.code, lang: b.lang === 'svg' ? 'xml' : 'html', name: b.name }).then(() => setTab('preview')); }
+    const ao = e.target.closest('[data-artopen], [data-artrun]'); if (ao) return openFromCard(ao, 'preview');
+    const ae = e.target.closest('[data-artedit]'); if (ae) return openFromCard(ae, 'code');
     const ac = e.target.closest('[data-artcode]'); if (ac) { const box = ac.closest('.artifact').querySelector('.art-code'); box.hidden = !box.hidden; ac.setAttribute('aria-expanded', String(!box.hidden)); return; }
     const run = e.target.closest('[data-run]'); if (run) return runInline(run);
     const can = e.target.closest('[data-canvas]'); if (can) { const b = blockInfo(can); return openCanvas({ content: b.code, lang: LANGS.includes(b.lang) ? b.lang : langOf(b.name), name: b.name }); }

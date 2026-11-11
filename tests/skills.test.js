@@ -93,3 +93,8 @@ test('edit keeps unknown agent keys, validation is explicit (no silent truncatio
   assert.equal(skills.removeSkill('my-skills/contract-helper').removed, true);
   assert.equal(skills.get('my-skills/contract-helper'), null);
 });
+
+test('auto-select respects the workspace: the Arabic writer does not hijack code requests', () => {
+  assert.equal(skills.autoSelect('اكتب مقالًا عن القهوة', 'chat')[0]?.id, 'caf/arabic-writer');
+  assert.notEqual(skills.autoSelect('اكتب لي صفحة هبوط بـ html و css', 'code')[0]?.id, 'caf/arabic-writer');
+});

@@ -66,6 +66,7 @@ function cleanMessage(x) {
   };
   if (x.model) m.model = str(x.model, 200);
   if (x.route) m.route = str(x.route, 20);
+  if (x.intent) m.intent = str(x.intent, 20);
   if (x.thinking) m.thinking = String(x.thinking);
   if (x.thinkMs) m.thinkMs = Math.max(0, Math.round(Number(x.thinkMs) || 0));
   if (x.stat) m.stat = str(x.stat, 80);

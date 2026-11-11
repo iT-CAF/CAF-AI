@@ -16,6 +16,10 @@ const CODE_STRONG = [
   /^\s*(import\s+[\w.{}, *]+(\s+from\s+['"][^'"]+['"])?|from\s+[\w.]+\s+import\s+\w+)/m, /\b(console\.log|System\.out\.println|printf|std::cout)\s*[(<]/,
   /\b\w*(Error|Exception):\s/, /Traceback \(most recent call last\)/,
 ];
+// طلب «ابنِ/اكتب/سوّ لي» + شيء برمجي (تطبيق، موقع، صفحة، لعبة، أداة…) أو اسم ملف بامتداد كود
+const CODE_BUILD_AR = /(^|[\s،,.!؟?:«"'(])(اكتب|اكتبي|اعمل|اعملي|سوّ|سوي|سو|ابن|ابني|ابنِ|أنشئ|انشئ|صمّم|صمم|برمج|برمجي|طوّر|طور|جهّز|جهز|اصنع)\s*(لي|لنا)?\s*(كود|برنامج|برنامجًا|تطبيق|تطبيقًا|موقع|موقعًا|صفحة|صفحه|لعبة|لعبه|أداة|اداة|آلة\s*حاسبة|اله\s*حاسبه|حاسبة|سكربت|سكريبت|بوت|واجهة|لوحة\s*تحكم|داشبورد|نموذج\s*تسجيل|فورم|استمارة|إضافة|اضافة|قالب|متجر\s*إلكتروني|api)/;
+const CODE_BUILD_EN = /\b(build|create|make|write|code|develop|generate)\b[^.?!\n]{0,30}\b(app|application|website|web ?page|landing page|game|script|tool|calculator|dashboard|component|bot|api|extension|signup form|login form|todo)\b/i;
+const CODE_FILE = /\b[\w-]+\.(html?|css|js|mjs|ts|tsx|jsx|py|php|java|go|rs|rb|sql|vue|svelte|swift|kt|cpp|cs|sh)\b/i;
 const CODE_HINTS = [
   /```/, /\b(def|class|function|const|let|var|import|from|return|public|private|static|void|struct|enum|fn|func|package|namespace|async|await|lambda)\b\s*[\w({]/,
   /#include\s*</, /\bSELECT\b[\s\S]+\bFROM\b/i, /=>\s*[{(]/, /<\/?(div|span|html|body|script|style)\b/i, /\$\w+\s*=/, /\b\w+\.\w+\([^)]*\)\s*;/,
@@ -34,7 +38,7 @@ function detectIntent({ text = '', hasImages = false, workspace = 'chat', forced
   if (!NOT_IMAGE.test(t) && (IMAGE_AR.test(t) || IMAGE_AR_SHORT.test(t) || IMAGE_EN.test(t) || IMAGE_EN_SHORT.test(t))) return { route: 'image', reason: 'image_request' };
   if (workspace === 'code') return { route: 'code', reason: 'code_workspace' };
   const hits = CODE_HINTS.reduce((n, re) => n + (re.test(t) ? 1 : 0), 0);
-  if (CODE_STRONG.some((re) => re.test(t)) || hits >= 2) return { route: 'code', reason: 'code_request' };
+  if (CODE_STRONG.some((re) => re.test(t)) || hits >= 2 || CODE_BUILD_AR.test(t) || CODE_BUILD_EN.test(t) || CODE_FILE.test(t)) return { route: 'code', reason: 'code_request' };
   return { route: 'chat', reason: 'general' };
 }
 

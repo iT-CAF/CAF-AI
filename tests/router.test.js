@@ -77,3 +77,10 @@ test('thinking values follow model capabilities', () => {
   assert.equal(thinkValue('off', caps, oss), 'low', 'gpt-oss cannot disable thinking');
   assert.equal(thinkValue('on', caps, oss), 'medium');
 });
+
+test('build requests go to the code route (canvas), writing requests stay in chat', () => {
+  for (const s of ['اكتب لي آلة حاسبة بسيطة: ملف index.html وملف style.css', 'سوي لي صفحة هبوط لمتجر', 'ابني لي موقع شخصي', 'write a todo app in react', 'اكتب كود يحسب المتوسط'])
+    assert.equal(detectIntent({ text: s }).route, 'code', s);
+  for (const s of ['اكتب لي مقال عن الصحة', 'اكتب رسالة لمديري', 'اعمل لي خطة مذاكرة', 'اشرح لي الذكاء الاصطناعي'])
+    assert.equal(detectIntent({ text: s }).route, 'chat', s);
+});
