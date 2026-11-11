@@ -26,6 +26,51 @@
         }
       },
       "check": "pyodide.mjs"
+    },
+    "sdcpp": {
+      "name": "stable-diffusion.cpp",
+      "version": "master-1088-32d516c",
+      "license": "MIT",
+      "homepage": "https://github.com/leejet/stable-diffusion.cpp",
+      "capability": "image-gen",
+      "check": "sd-cli",
+      "assets": {
+        "darwin-arm64": {
+          "url": "https://github.com/leejet/stable-diffusion.cpp/releases/download/master-1088-32d516c/sd-master-32d516c-bin-Darwin-macOS-26.7.2-arm64.zip",
+          "size": 38105745,
+          "hash": "sha256:b6588e81e788d9f2f24498831ba398d7523152e7ec280ff282f39c2009465b77",
+          "type": "zip",
+          "backend": "metal"
+        },
+        "linux-x64": {
+          "url": "https://github.com/leejet/stable-diffusion.cpp/releases/download/master-1088-32d516c/sd-master-32d516c-bin-Linux-Ubuntu-26.04-x86_64.zip",
+          "size": 29033492,
+          "hash": "sha256:b8b160ebe5dcc0fb701428a04896fe5d25ff834609f4fd5429cc7bc21b5edfc0",
+          "type": "zip",
+          "backend": "cpu"
+        },
+        "linux-x64-cuda": {
+          "url": "https://github.com/leejet/stable-diffusion.cpp/releases/download/master-1088-32d516c/sd-master-32d516c-bin-Linux-Ubuntu-26.04-x86_64-vulkan.zip",
+          "size": 41907665,
+          "hash": "sha256:1063fe0a55d81265b8f332c7c5b9aba78598d23313a520ec82763b2d536beb11",
+          "type": "zip",
+          "backend": "vulkan"
+        },
+        "win32-x64": {
+          "url": "https://github.com/leejet/stable-diffusion.cpp/releases/download/master-1088-32d516c/sd-master-32d516c-bin-win-cpu-x64.zip",
+          "size": 18260702,
+          "hash": "sha256:f53571cf4fcc2b1b546478eaf0c8fb6055d7df34478904c753a6d564db756383",
+          "type": "zip",
+          "backend": "cpu"
+        },
+        "win32-x64-cuda": {
+          "url": "https://github.com/leejet/stable-diffusion.cpp/releases/download/master-1088-32d516c/sd-master-32d516c-bin-win-vulkan-x64.zip",
+          "size": 30031373,
+          "hash": "sha256:956853799eb2af71a02c8088ac88ad96978cda902277de75feef8dcf918e7dfc",
+          "type": "zip",
+          "backend": "vulkan"
+        }
+      }
     }
   },
   "models": {
@@ -64,6 +109,90 @@
           "url": "https://files.pythonhosted.org/packages/d0/00/1e03a4989fa5795da308cd774f05b704ace555a70f9bf9d3be057b680bcf/python_docx-1.2.0-py3-none-any.whl",
           "size": 252987,
           "hash": "sha256:3fd478f3250fbbbfd3b94fe1e985955737c145627498896a8a6bf81f4baf66c7"
+        }
+      ]
+    },
+    "flux2-klein-4b": {
+      "name": "FLUX.2 klein 4B",
+      "kind": "image",
+      "license": "Apache-2.0",
+      "capability": "image-gen",
+      "ramGB": 8,
+      "tier": "fast",
+      "steps": 4,
+      "maxSteps": 12,
+      "cfg": 1,
+      "base": 768,
+      "args": [
+        "--diffusion-model",
+        "{flux-2-klein-4b-Q4_0.gguf}",
+        "--llm",
+        "{Qwen3-4B-Q4_K_M.gguf}",
+        "--vae",
+        "{flux2-vae.safetensors}",
+        "--cfg-scale",
+        "{cfg}"
+      ],
+      "files": [
+        {
+          "name": "flux-2-klein-4b-Q4_0.gguf",
+          "url": "https://huggingface.co/leejet/FLUX.2-klein-4B-GGUF/resolve/main/flux-2-klein-4b-Q4_0.gguf",
+          "size": 2460378560,
+          "hash": "sha256:d1023499ef3f2f82ff7c50e6778495195c1b6cc34835741778868428111f9ff4"
+        },
+        {
+          "name": "Qwen3-4B-Q4_K_M.gguf",
+          "url": "https://huggingface.co/unsloth/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q4_K_M.gguf",
+          "size": 2497281312,
+          "hash": "sha256:f6f851777709861056efcdad3af01da38b31223a3ba26e61a4f8bf3a2195813a"
+        },
+        {
+          "name": "flux2-vae.safetensors",
+          "url": "https://huggingface.co/Comfy-Org/flux2-klein-4B/resolve/main/split_files/vae/flux2-vae.safetensors",
+          "size": 336211292,
+          "hash": "sha256:868fe7b343cc8f3a19dbcfcafbc3d5f888802be3f89bd81b65b3621a066ce8f3"
+        }
+      ]
+    },
+    "z-image-turbo": {
+      "name": "Z-Image Turbo",
+      "kind": "image",
+      "license": "Apache-2.0",
+      "capability": "image-gen",
+      "ramGB": 10,
+      "tier": "quality",
+      "steps": 8,
+      "maxSteps": 16,
+      "cfg": 1,
+      "base": 1024,
+      "args": [
+        "--diffusion-model",
+        "{z_image_turbo-Q4_K.gguf}",
+        "--llm",
+        "{Qwen3-4B-Instruct-2507-Q4_K_M.gguf}",
+        "--vae",
+        "{ae.safetensors}",
+        "--cfg-scale",
+        "{cfg}"
+      ],
+      "files": [
+        {
+          "name": "z_image_turbo-Q4_K.gguf",
+          "url": "https://huggingface.co/leejet/Z-Image-Turbo-GGUF/resolve/main/z_image_turbo-Q4_K.gguf",
+          "size": 3864250304,
+          "hash": "sha256:14b375ab4f226bc5378f68f37e899ef3c2242b8541e61e2bc1aff40976086fbd"
+        },
+        {
+          "name": "Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
+          "url": "https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF/resolve/main/Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
+          "size": 2497281120,
+          "hash": "sha256:3605803b982cb64aead44f6c1b2ae36e3acdb41d8e46c8a94c6533bc4c67e597"
+        },
+        {
+          "name": "ae.safetensors",
+          "url": "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/vae/ae.safetensors",
+          "size": 335304388,
+          "hash": "sha256:afc8e28272cd15db3919bacdb6918ce9c1ed22e96cb12c4d5ed0fba823529e38"
         }
       ]
     }

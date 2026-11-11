@@ -40,6 +40,7 @@ Not distributed in this repository; CAF AI downloads them from official sources 
 | llama.cpp / ggml (داخل Ollama) | تنفيذ النماذج · inference | MIT | https://github.com/ggml-org/llama.cpp |
 | Node.js | تشغيل الخادم المحلي (إن لم يوجد) · local server runtime | MIT | https://nodejs.org |
 | Pyodide 314.0.7 | تشغيل Python في المتصفح · Python in the browser | MPL-2.0 (CPython: PSF License) | https://pyodide.org |
+| stable-diffusion.cpp (master-1088-32d516c) | توليد الصور · image generation (Metal/Vulkan/CPU) | MIT | https://github.com/leejet/stable-diffusion.cpp |
 | openpyxl 3.1.5 · et_xmlfile 2.0.0 | تعديل ملفات Excel · editing Excel files | MIT | https://pypi.org/project/openpyxl/ |
 | python-docx 1.2.0 · typing_extensions 4.15.0 | تعديل ملفات Word · editing Word files | MIT · PSF-2.0 | https://pypi.org/project/python-docx/ |
 | lxml 6.1.3 (Pyodide build) | معالجة XML لـ python-docx | BSD-3-Clause | https://lxml.de |
@@ -61,3 +62,6 @@ and the app warns before downloading anything with a non-commercial license.
 | gpt-oss | Apache-2.0 |
 | Llama 3.2 | Llama 3.2 Community License |
 | BGE-M3 | MIT |
+| FLUX.2 klein 4B (GGUF: leejet) · FLUX.2 VAE (Comfy-Org) | Apache-2.0 |
+| Z-Image Turbo (GGUF: leejet) · its VAE (Comfy-Org) | Apache-2.0 |
+| Qwen3-4B / Qwen3-4B-Instruct-2507 GGUF (unsloth) — مشفّر النص لنماذج الصور | Apache-2.0 |

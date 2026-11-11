@@ -43,5 +43,6 @@ async function statusAll() {
 
 register(require('./ollama'));
 register(require('./pyodide'));
+register(require('./sdcpp'));
 
 module.exports = { register, get, all, resolve, statusAll, ORDER };
