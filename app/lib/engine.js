@@ -7,6 +7,19 @@ const { P, findOllama } = require('./paths');
 
 let child = null;
 let enginePort = null;
+let engineHost = '127.0.0.1';
+
+// وضع المحرك الخارجي: CAF_ENGINE_URL=http://127.0.0.1:11434 يستخدم Ollama يعمل أصلًا بدل تشغيل نسخة خاصة
+// (مفيد للاختبارات بمحرك وهمي، ولمن يشغّل Ollama بنفسه). يُقبل 127.0.0.1/localhost فقط.
+const EXTERNAL = (() => {
+  const u = process.env.CAF_ENGINE_URL;
+  if (!u) return null;
+  try {
+    const x = new URL(u);
+    if (!['127.0.0.1', 'localhost', '[::1]'].includes(x.hostname)) return null;
+    return { host: x.hostname === 'localhost' ? '127.0.0.1' : x.hostname, port: parseInt(x.port, 10) || 11434 };
+  } catch { return null; }
+})();
 
 function freePort(start) {
   return new Promise((resolve) => {
@@ -20,9 +33,9 @@ function freePort(start) {
   });
 }
 
-function ping(port) {
+function ping(port, host = engineHost) {
   return new Promise((resolve) => {
-    const req = http.get({ host: '127.0.0.1', port, path: '/api/version', timeout: 1500 }, (res) => {
+    const req = http.get({ host, port, path: '/api/version', timeout: 1500 }, (res) => {
       res.resume();
       resolve(res.statusCode === 200);
     });
@@ -32,6 +45,11 @@ function ping(port) {
 }
 
 async function startEngine() {
+  if (EXTERNAL) {
+    engineHost = EXTERNAL.host; enginePort = EXTERNAL.port;
+    if (await ping(enginePort)) return enginePort;
+    throw new Error('ENGINE_START_FAILED');
+  }
   if (child) return enginePort;
   const bin = findOllama();
   if (!bin) throw new Error('ENGINE_MISSING');
@@ -58,7 +76,7 @@ async function startEngine() {
 }
 
 function stopEngine(force = false) {
-  if (!child) return;
+  if (EXTERNAL || !child) return;
   try {
     if (process.platform === 'win32') spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
     else child.kill(force ? 'SIGKILL' : 'SIGTERM');
@@ -67,10 +85,14 @@ function stopEngine(force = false) {
 }
 
 const getPort = () => enginePort;
+const getHost = () => engineHost;
+const isExternal = () => !!EXTERNAL;
+const isRunning = () => !!(EXTERNAL ? enginePort : child);
 
 // يتأكد أن المحرك حيّ ويستجيب، وإلا يعيد تشغيله (توقّف أو تجمّد بعد فصل قرص مثلًا)
 let healing = null;
 async function ensureEngine() {
+  if (EXTERNAL) { if (enginePort && await ping(enginePort)) return enginePort; return startEngine(); }
   if (child && enginePort && await ping(enginePort)) return enginePort;
   if (!healing) {
     healing = (async () => { stopEngine(true); return startEngine(); })().finally(() => { healing = null; });
@@ -83,7 +105,7 @@ function engineJson(method, path, body, timeout = 15000) {
   return new Promise((resolve, reject) => {
     const data = body ? Buffer.from(JSON.stringify(body)) : null;
     const req = http.request({
-      host: '127.0.0.1', port: enginePort, path, method, timeout,
+      host: engineHost, port: enginePort, path, method, timeout,
       headers: data ? { 'Content-Type': 'application/json', 'Content-Length': data.length } : {},
     }, (res) => {
       const chunks = [];
@@ -101,4 +123,45 @@ function engineJson(method, path, body, timeout = 15000) {
   });
 }
 
-module.exports = { startEngine, stopEngine, ensureEngine, getPort, engineJson };
+// طلب بثّ NDJSON من المحرك: onLine لكل سطر JSON، يعيد وعدًا ينتهي عند اكتمال البث
+function engineStream(path, body, { onLine, signal, timeout = 0 } = {}) {
+  return new Promise((resolve, reject) => {
+    const data = Buffer.from(JSON.stringify(body));
+    const req = http.request({
+      host: engineHost, port: enginePort, path, method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': data.length },
+      ...(timeout ? { timeout } : {}),
+    }, (res) => {
+      let buf = '';
+      if (res.statusCode >= 400) {
+        const chunks = []; res.on('data', (c) => chunks.push(c));
+        res.on('end', () => {
+          let msg = Buffer.concat(chunks).toString('utf8');
+          try { msg = JSON.parse(msg).error || msg; } catch { /* نص */ }
+          const e = new Error(msg || `HTTP ${res.statusCode}`); e.status = res.statusCode; reject(e);
+        });
+        return;
+      }
+      res.setEncoding('utf8');
+      res.on('data', (c) => {
+        buf += c; let i;
+        while ((i = buf.indexOf('\n')) >= 0) {
+          const line = buf.slice(0, i); buf = buf.slice(i + 1);
+          if (!line.trim()) continue;
+          try { onLine && onLine(JSON.parse(line)); } catch (e) { if (e instanceof SyntaxError) continue; req.destroy(); return reject(e); }
+        }
+      });
+      res.on('end', () => { if (buf.trim()) { try { onLine && onLine(JSON.parse(buf)); } catch { /* */ } } resolve(); });
+      res.on('error', reject);
+    });
+    req.on('error', reject);
+    req.on('timeout', () => req.destroy(new Error('ENGINE_TIMEOUT')));
+    if (signal) {
+      if (signal.aborted) { req.destroy(); return reject(Object.assign(new Error('aborted'), { name: 'AbortError' })); }
+      signal.addEventListener('abort', () => { req.destroy(); reject(Object.assign(new Error('aborted'), { name: 'AbortError' })); }, { once: true });
+    }
+    req.write(data); req.end();
+  });
+}
+
+module.exports = { startEngine, stopEngine, ensureEngine, getPort, getHost, isExternal, isRunning, engineJson, engineStream, ping };

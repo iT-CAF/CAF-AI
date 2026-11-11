@@ -9,9 +9,12 @@ const { P } = require('./paths');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const readState = () => { try { return JSON.parse(fs.readFileSync(P.state, 'utf8')); } catch { return null; } };
 
+// رمز الجلسة يكتبه الخادم في server.json (داخل CAF_HOME) لتستخدمه الطرفية فقط
+const tokenHeader = () => { const s = readState(); return s && s.token ? { 'X-CAF-Token': s.token } : {}; };
+
 function req(port, method, p, timeout = 1500) {
   return new Promise((resolve) => {
-    const r = http.request({ host: '127.0.0.1', port, path: p, method, timeout }, (res) => {
+    const r = http.request({ host: '127.0.0.1', port, path: p, method, timeout, headers: tokenHeader() }, (res) => {
       let b = ''; res.on('data', (c) => { b += c; });
       res.on('end', () => { try { resolve(JSON.parse(b || '{}')); } catch { resolve(null); } });
     });
@@ -60,7 +63,7 @@ async function stopDaemon() {
   const st = await status();
   if (!st.running) return false;
   const s = readState();
-  await new Promise((resolve) => { const r = http.request({ host: '127.0.0.1', port: st.port, path: '/api/quit', method: 'POST', timeout: 2000 }, (res) => { res.resume(); res.on('end', resolve); }); r.on('error', resolve); r.on('timeout', () => { r.destroy(); resolve(); }); r.end(); });
+  await new Promise((resolve) => { const r = http.request({ host: '127.0.0.1', port: st.port, path: '/api/quit', method: 'POST', timeout: 2000, headers: tokenHeader() }, (res) => { res.resume(); res.on('end', resolve); }); r.on('error', resolve); r.on('timeout', () => { r.destroy(); resolve(); }); r.end(); });
   for (let i = 0; i < 40; i++) { if (!(await status()).running) return true; await sleep(250); }
   if (s && s.pid) { try { process.kill(s.pid); } catch { /* */ } }
   return true;

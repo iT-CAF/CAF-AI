@@ -31,26 +31,44 @@ function pickModelsDir() {
   return own;
 }
 
+const DATA = path.join(CAF_HOME, 'data');
 const P = {
   root: ROOT,
   home: CAF_HOME,
   app: path.join(ROOT, 'app'),
   web: path.join(ROOT, 'app', 'web'),
+  catalogDir: path.join(ROOT, 'app', 'catalog'),
   engine: path.join(CAF_HOME, 'engine'),
   runtime: path.join(CAF_HOME, 'runtime'),
   models: pickModelsDir(),
-  data: path.join(CAF_HOME, 'data'),
-  chats: path.join(CAF_HOME, 'data', 'chats'),
-  engineHome: path.join(CAF_HOME, 'data', 'engine-home'),
-  settings: path.join(CAF_HOME, 'data', 'settings.json'),
-  state: path.join(CAF_HOME, 'data', 'server.json'),
-  tmp: path.join(CAF_HOME, 'data', 'tmp'),
+  // محركات وملفات إضافية تُنزَّل عند الطلب فقط (توليد الصور، الصوت، Pyodide)
+  extras: path.join(CAF_HOME, 'extras'),
+  extraEngines: path.join(CAF_HOME, 'extras', 'engines'),
+  extraModels: path.join(CAF_HOME, 'extras', 'models'),
+  data: DATA,
+  chats: path.join(DATA, 'chats'),
+  attachments: path.join(DATA, 'attachments'),
+  images: path.join(DATA, 'images'),
+  knowledge: path.join(DATA, 'knowledge'),
+  canvas: path.join(DATA, 'canvas'),
+  backups: path.join(DATA, 'backups'),
+  engineHome: path.join(DATA, 'engine-home'),
+  settings: path.join(DATA, 'settings.json'),
+  state: path.join(DATA, 'server.json'),
+  schema: path.join(DATA, 'schema.json'),
+  hardware: path.join(DATA, 'hardware.json'),
+  catalogCache: path.join(DATA, 'catalog.json'),
+  modelCaps: path.join(DATA, 'model-caps.json'),
+  apiKey: path.join(DATA, 'api-key.txt'),
+  tmp: path.join(DATA, 'tmp'),
 };
 
 const VERSION = require('../../package.json').version;
 
 function ensureDirs() {
-  for (const d of [P.engine, P.models, P.data, P.chats, P.engineHome, P.tmp]) fs.mkdirSync(d, { recursive: true });
+  for (const d of [P.engine, P.models, P.data, P.chats, P.engineHome, P.tmp, P.attachments, P.images, P.knowledge, P.canvas, P.backups, P.extraEngines, P.extraModels]) {
+    fs.mkdirSync(d, { recursive: true });
+  }
 }
 
 // ترتيب البحث عن Ollama: متغير CAF_OLLAMA_BIN ← مجلد كآف ← النسخة المثبّتة في النظام

@@ -6,3 +6,5 @@ data/
 node_modules/
 .DS_Store
 *.part
+extras/
+tools/vendor/node_modules/

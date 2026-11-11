@@ -6,8 +6,10 @@
   const t = (k) => (window.I18N[state.settings?.lang || 'ar'][k] ?? k);
   const dark = window.matchMedia('(prefers-color-scheme: dark)');
 
+  const TOKEN = document.querySelector('meta[name="caf-token"]')?.content || '';
+  const H = (extra) => ({ 'X-CAF-Token': TOKEN, ...(extra || {}) });
   const api = async (method, url, body) => {
-    const r = await fetch(url, { method, headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined });
+    const r = await fetch(url, { method, headers: H(body ? { 'Content-Type': 'application/json' } : {}), body: body ? JSON.stringify(body) : undefined });
     if (!r.ok) throw new Error(url + ' ' + r.status);
     return r.json();
   };
@@ -141,7 +143,7 @@
     const prog = $('pullProg'), bar = $('pullBar'), txt = $('pullTxt');
     prog.classList.remove('hidden'); bar.style.width = '0'; txt.textContent = t('pulling'); $('pullBtn').disabled = true;
     try {
-      const r = await fetch('/api/models/pull', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+      const r = await fetch('/api/models/pull', { method: 'POST', headers: H({ 'Content-Type': 'application/json' }), body: JSON.stringify({ name }) });
       const reader = r.body.getReader(); const dec = new TextDecoder(); let buf = ''; let ok = false;
       const handle = (line) => {
         if (!line.trim()) return;
@@ -241,7 +243,7 @@
     state.abort = new AbortController();
     const history = state.chat.messages.slice(0, -1).map(({ role, content }) => ({ role, content }));
     try {
-      const r = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: state.abort.signal, body: JSON.stringify({ model, messages: history }) });
+      const r = await fetch('/api/chat', { method: 'POST', headers: H({ 'Content-Type': 'application/json' }), signal: state.abort.signal, body: JSON.stringify({ model, messages: history }) });
       if (!r.ok) throw new Error(t('errEngine'));
       const reader = r.body.getReader(); const dec = new TextDecoder(); let buf = '';
       for (;;) {
@@ -250,7 +252,7 @@
         while ((i = buf.indexOf('\n')) >= 0) {
           const line = buf.slice(0, i); buf = buf.slice(i + 1); if (!line.trim()) continue;
           const j = JSON.parse(line);
-          if (j.error) throw new Error(j.error);
+          if (j.error) throw new Error(t('err_' + j.error) !== 'err_' + j.error ? t('err_' + j.error) : j.error);
           if (j.message?.content) {
             state.chat.messages[idx].content += j.message.content;
             const n = node(); if (n) { n.innerHTML = renderMd(state.chat.messages[idx].content) + '<span class="cursor"></span>'; scrollDown(false); }
