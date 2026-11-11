@@ -1,7 +1,7 @@
 /* CAF AI · © 2026 كآف · iT CAF — جميع الحقوق محفوظة. */
 // المحادثة: عرض الرسائل، البث، التفكير، الموجّه التلقائي، الأخطاء مع حلول، الحفظ.
 import { state, $, t, esc, ic, uid, api, readNdjson, authHeaders, errText, toast, emit, on, confirmBox, promptBox, ApiError } from './core.js';
-import { renderMd, enhance, splitThink } from './md.js';
+import { renderMd, enhance, splitThink, dirOf, morph } from './md.js';
 
 // نقاط توسعة: وحدات أخرى تضيف محتوى للرسالة (صور، مصادر، صوت) وأزرار أفعال
 export const msgExtras = [];
@@ -63,7 +63,7 @@ function badge(m) {
 }
 function thinkHtml(thinking, open, live) {
   if (!thinking) return '';
-  return `<details class="think" ${open ? 'open' : ''}><summary>${ic('bulb')}<span>${esc(t(live ? 'thinking' : 'thoughts'))}</span></summary><div class="think-body" dir="auto">${esc(thinking).replace(/\n/g, '<br>')}</div></details>`;
+  return `<details class="think" ${open ? 'open' : ''}><summary>${ic('bulb')}<span>${esc(t(live ? 'thinking' : 'thoughts'))}</span></summary><div class="think-body" dir="${dirOf(thinking)}">${esc(thinking).replace(/\n/g, '<br>')}</div></details>`;
 }
 export function msgHtml(m, idx, live) {
   const isUser = m.role === 'user';
@@ -73,7 +73,7 @@ export function msgHtml(m, idx, live) {
   thinking = m.thinking || thinking;
   const thinkingLive = live && (open || (thinking && !content));
   let body;
-  if (isUser) body = `<div class="user-text">${esc(m.content)}</div>`;
+  if (isUser) body = `<div class="user-text" dir="${dirOf(m.content)}">${esc(m.content)}</div>`;
   else if (m.errCode) body = errorBody(m);
   else if (!content && live) body = thinking ? '' : '<span class="typing"><i></i><i></i><i></i></span>';
   else body = renderMd(content, { live }) + (live ? '<span class="cursor"></span>' : '');
@@ -83,7 +83,7 @@ export function msgHtml(m, idx, live) {
   const acts = !isUser && !live && !m.errCode
     ? `<div class="msg-acts"><button class="mini" data-copymsg="${idx}">${ic('copy')}${esc(t('copy'))}</button>${isLast ? `<button class="mini" data-regen>${ic('refresh')}${esc(t('regenerate'))}</button>` : ''}${msgActions.map((fn) => fn(m, idx)).join('')}</div>`
     : (!isUser && !live && m.errCode && isLast ? `<div class="msg-acts"><button class="mini" data-regen>${ic('refresh')}${esc(t('retry'))}</button></div>` : '');
-  return `<article class="msg ${m.role}${m.errCode ? ' is-err' : ''}" data-i="${idx}">${avatar}<div class="msg-main"><div class="who">${esc(who)}${isUser ? '' : badge(m)}${stat}</div>${isUser ? '' : thinkHtml(thinking, thinkingLive, thinkingLive)}${isUser ? extras : ''}<div class="body" dir="auto">${body}</div>${isUser ? '' : extras}${acts}</div></article>`;
+  return `<article class="msg ${m.role}${m.errCode ? ' is-err' : ''}" data-i="${idx}">${avatar}<div class="msg-main"><div class="who">${esc(who)}${isUser ? '' : badge(m)}${stat}</div>${isUser ? '' : thinkHtml(thinking, thinkingLive, thinkingLive)}${isUser ? extras : ''}<div class="body">${body}</div>${isUser ? '' : extras}${acts}</div></article>`;
 }
 
 function errorBody(m) {
@@ -103,18 +103,59 @@ export function renderMessages(force) {
   enhance(box);
   scrollDown(!!force);
 }
+// تحديث الرسالة أثناء البث في مكانها: نستبدل الكتل التي تغيّرت فقط (بلا وميض ولا إعادة رسم كاملة)
+let liveTimer = null; let liveIdx = -1; let lastLive = 0;
+function scheduleLive(idx) {
+  liveIdx = idx;
+  if (liveTimer) return;
+  const wait = Math.max(0, 50 - (performance.now() - lastLive));
+  liveTimer = setTimeout(() => requestAnimationFrame(() => { liveTimer = null; lastLive = performance.now(); patchLive(liveIdx); }), wait);
+}
 function patchLive(idx) {
-  const m = state.chat.messages[idx];
+  const m = state.chat?.messages[idx];
   const node = document.querySelector(`.msg[data-i="${idx}"]`);
-  if (!node) return;
+  if (!m || !node) return;
+  const { thinking: inlineThink, content, open } = splitThink(m.content);
+  const thinking = m.thinking || inlineThink;
+  const who = node.querySelector('.who');
+  const whoHtml = `${esc(t('assistant'))}${badge(m)}${m.stat ? `<span class="stat">${esc(m.stat)}</span>` : ''}`;
+  if (who.__src !== whoHtml) { who.innerHTML = whoHtml; who.__src = whoHtml; }
+  // التفكير: نحدّث النص فقط ونحافظ على حالة الطيّ
+  let det = node.querySelector('details.think');
+  const thinkingNow = open || (thinking && !content);
+  if (thinking) {
+    if (!det) { node.querySelector('.who').insertAdjacentHTML('afterend', thinkHtml(thinking, thinkingNow, thinkingNow)); det = node.querySelector('details.think'); }
+    const tb = det.querySelector('.think-body');
+    tb.textContent = thinking; tb.dir = dirOf(thinking);
+    det.querySelector('summary span').textContent = t(thinkingNow ? 'thinking' : 'thoughts');
+    if (!det.dataset.user) det.open = !!thinkingNow && state.settings.showThinking !== false;
+  }
+  const body = node.querySelector('.body');
+  if (!content) {
+    if (!thinking && !body.querySelector('.typing')) body.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
+    if (thinking) body.innerHTML = '';
+  } else {
+    morph(body, renderMd(content, { live: true }) + '<span class="cursor"></span>');
+    enhance(body);
+  }
+  scrollDown(false);
+}
+// نهاية البث: نستبدل رسالة واحدة فقط بنسختها النهائية (تلوين الكود، الأزرار)
+function finalizeMsg(idx) {
+  clearTimeout(liveTimer); liveTimer = null;
+  const node = document.querySelector(`.msg[data-i="${idx}"]`);
+  const m = state.chat.messages[idx];
+  if (!node || !m) return renderMessages(false);
   const tmp = document.createElement('div');
-  tmp.innerHTML = msgHtml(m, idx, true);
-  const fresh = tmp.firstElementChild;
-  // نحافظ على حالة طيّ التفكير إن غيّرها المستخدم
-  const oldThink = node.querySelector('details.think');
-  const newThink = fresh.querySelector('details.think');
-  if (oldThink && newThink && oldThink.dataset.user) { newThink.open = oldThink.open; newThink.dataset.user = '1'; }
+  tmp.innerHTML = msgHtml(m, idx, false);
+  const fresh = tmp.firstElementChild; fresh.classList.add('patched');
+  const det = node.querySelector('details.think'); const nd = fresh.querySelector('details.think');
+  if (det && nd) { nd.open = det.dataset.user ? det.open : false; if (det.dataset.user) nd.dataset.user = '1'; }
   node.replaceWith(fresh);
+  // الرسالة السابقة كانت «الأخيرة» وفيها زر إعادة التوليد: نحدّثها
+  const prev = document.querySelector(`.msg[data-i="${idx - 2}"]`);
+  if (prev && state.chat.messages[idx - 2]) { const t2 = document.createElement('div'); t2.innerHTML = msgHtml(state.chat.messages[idx - 2], idx - 2, false); const f2 = t2.firstElementChild; f2.classList.add('patched'); prev.replaceWith(f2); enhance(f2); }
+  enhance(fresh);
   scrollDown(false);
 }
 export function scrollDown(force) {
@@ -162,12 +203,13 @@ export async function send(text, opts = {}) {
         am.model = j.meta.model || ''; am.route = j.meta.auto ? j.meta.route : 'manual';
         if (j.meta.sources) am.sources = j.meta.sources;
         if (j.meta.route === 'image') { am.route = 'image'; am.imagePrompt = j.meta.prompt; }
-        patchLive(idx); return;
+        scheduleLive(idx); return;
       }
+      if (j.reset) { am.content = ''; am.thinking = ''; scheduleLive(idx); return; } // إعادة التوليد بسبب خلط اللغات
       if (j.error) throw new ApiError(j.error, 500, j);
       if (j.message?.thinking) { if (!thinkStart) thinkStart = performance.now(); am.thinking = (am.thinking || '') + j.message.thinking; }
       if (j.message?.content) { if (!t0) t0 = performance.now(); am.content += j.message.content; }
-      if (j.message?.thinking || j.message?.content) patchLive(idx);
+      if (j.message?.thinking || j.message?.content) scheduleLive(idx);
       if (j.done && j.eval_count && j.eval_duration) am.stat = `${(j.eval_count / (j.eval_duration / 1e9)).toFixed(1)} ${t('tokps')}`;
     });
     if (am.route === 'image') { delete am.live; setStreaming(false); emit('image:intent', { prompt: am.imagePrompt, msg: am, idx }); return; }
@@ -182,7 +224,7 @@ export async function send(text, opts = {}) {
   if (!am.content && !am.errCode && !am.thinking) chat.messages.pop();
   if (am.errCode) { am.content = ''; }
   chat.model = am.model || chat.model;
-  renderMessages(false);
+  finalizeMsg(idx);
   // رسائل الخطأ لا تُحفظ كإجابات
   const toSave = chat.messages;
   if (am.errCode) { chat.messages = toSave.filter((m) => !m.errCode); await persist(); chat.messages = toSave; }

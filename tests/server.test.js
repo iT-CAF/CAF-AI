@@ -80,12 +80,15 @@ test('chat streams NDJSON with a meta line first', async () => {
   assert.ok(lines[0].meta);
   assert.equal(lines[0].meta.model, 'qwen2.5:7b');
   const text = lines.map((l) => l.message?.content || '').join('');
-  assert.equal(text, 'echo(qwen2.5:7b): سلام');
+  assert.ok(text.startsWith('echo(qwen2.5:7b): سلام'), text);
+  assert.match(text, /أجب بالعربية فقط/, 'Arabic reminder appended to the last user turn');
+  assert.equal(lines[0].meta.lang, 'ar');
   assert.ok(lines.at(-1).done);
   // تعليمات النظام تُضاف أولًا
   const sent = S.mock.calls.filter((c) => c.path === '/api/chat').at(-1).body;
   assert.equal(sent.messages[0].role, 'system');
-  assert.equal(sent.messages[0].content, 'كن مختصرًا');
+  assert.match(sent.messages[0].content, /أجب دائمًا باللغة العربية/);
+  assert.match(sent.messages[0].content, /كن مختصرًا/);
 });
 
 test('missing model gives a stable error code', async () => {
@@ -125,4 +128,19 @@ test('attachments accept real images only and are served with the cookie', async
 test('static files cannot escape the web root', async () => {
   assert.notEqual((await S.raw('GET', '/../package.json')).status, 200);
   assert.notEqual((await S.raw('GET', '/%2e%2e/package.json')).status, 200);
+});
+
+test('language guard: Chinese in an Arabic answer triggers one retry, then gets filtered', async () => {
+  const before = S.mock.calls.filter((c) => c.path === '/api/chat').length;
+  const r = await S.api('POST', '/api/chat', { body: { model: 'qwen2.5:7b', messages: [{ role: 'user', content: 'اختبار CJK باللغة العربية' }] } });
+  const lines = parseNdjson(r.text);
+  assert.ok(lines.some((l) => l.reset), 'client is told to reset');
+  const afterReset = lines.slice(lines.findIndex((l) => l.reset) + 1);
+  const text = afterReset.map((l) => l.message?.content || '').join('');
+  assert.doesNotMatch(text, /[\u4e00-\u9fff]/, 'no Chinese reaches the user');
+  assert.match(text, /بالعربية/);
+  const calls = S.mock.calls.filter((c) => c.path === '/api/chat').slice(before);
+  assert.equal(calls.length, 2, 'exactly one retry');
+  assert.ok(calls[1].body.options.temperature <= 0.3, 'retry runs cooler');
+  assert.match(calls[1].body.messages[0].content, /بالعربية فقط/);
 });

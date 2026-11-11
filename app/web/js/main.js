@@ -9,7 +9,7 @@ import { renderTools, bindTools } from './pages/tools.js';
 import { renderHardware } from './pages/hardware.js';
 
 // وحدات المزايا تسجّل نفسها (تُحمَّل بعد الأساس)
-const FEATURES = [];
+const FEATURES = ['./features/code.js'];
 
 const dark = window.matchMedia('(prefers-color-scheme: dark)');
 const effectiveTheme = () => (state.settings.theme === 'system' ? (dark.matches ? 'dark' : 'light') : state.settings.theme);

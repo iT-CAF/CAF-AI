@@ -14,7 +14,29 @@ const CODE_PROMPT_AR = [
   'أنت مساعد برمجة خبير داخل «كآف AI». أجب بلغة المستخدم (العربية افتراضيًا) واكتب الكود دائمًا داخل كتل ``` مع اسم اللغة.',
   'عند كتابة ملف كامل ضع اسمه المقترح في سطر قبل الكتلة بصيغة: **الملف:** `name.ext`.',
   'اشرح باختصار ودقة، واذكر الافتراضات، ولا تخترع مكتبات أو دوال غير موجودة. التعليقات داخل الكود بلغة المستخدم إن طلب ذلك.',
+  'كآف AI يعمل دون إنترنت: في صفحات HTML لا تستخدم روابط CDN ولا خطوطًا أو صورًا من الإنترنت؛ اكتب CSS وJavaScript داخل الملف نفسه، واستخدم SVG مضمّنًا أو تدرجات CSS بدل الصور. اجعل صفحة HTML ملفًا واحدًا كاملًا يبدأ بـ <!DOCTYPE html>.',
 ].join('\n');
+
+// ---------- قفل لغة الرد ----------
+// العربية تُكتب بالعربية فقط (الكود والمصطلحات التقنية مسموحة بالإنجليزية). أي حروف صينية/يابانية/كورية/سيريلية/تايلاندية
+// خارج كتل الكود تعني أن النموذج خلط اللغات: نعيد التوليد مرة بتعليمات أشد، ثم نحذف تلك الحروف كحل أخير.
+const AR_LETTERS = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/g;
+const FOREIGN = /[\u3040-\u30FF\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\uAC00-\uD7AF\u1100-\u11FF\u0400-\u04FF\u0E00-\u0E7F\uFF00-\uFF60]/;
+const FOREIGN_G = new RegExp(FOREIGN.source, 'g');
+function detectLang(text) {
+  const s = String(text || '').replace(/```[\s\S]*?```/g, ' ').replace(/`[^`]*`/g, ' ');
+  const ar = (s.match(AR_LETTERS) || []).length;
+  const lat = (s.match(/[A-Za-z]/g) || []).length;
+  if (ar >= 2 && ar * 2 >= lat * 0.5) return 'ar';
+  if (lat >= 3) return 'en';
+  return null;
+}
+const LANG_RULE = {
+  ar: 'قاعدة اللغة: أجب دائمًا باللغة العربية الفصحى الواضحة فقط. ممنوع منعًا باتًا استخدام الصينية أو أي لغة أخرى في الشرح. أسماء التقنيات والكود يمكن أن تبقى بالإنجليزية.',
+  en: 'Language rule: always answer in clear English only. Never switch to Chinese or any other language.',
+};
+const LANG_REMINDER = { ar: '\n\n(أجب بالعربية فقط.)', en: '\n\n(Answer in English only.)' };
+const outsideCode = (s) => String(s).replace(/```[\s\S]*?(```|$)/g, ' ');
 
 class ChatError extends Error { constructor(code, status = 400, extra = {}) { super(code); this.code = code; this.status = status; Object.assign(this, extra); } }
 
@@ -74,7 +96,14 @@ function createChat(hooks = {}) {
     }
 
     const messages = hooks.mapMessages ? await hooks.mapMessages(raw, { body, caps }) : raw.map((m) => ({ role: ['user', 'assistant', 'system'].includes(m.role) ? m.role : 'user', content: String(m.content ?? '') }));
+    const lang = detectLang(text) || (settings.lang === 'ar' && !text ? 'ar' : null);
+    if (lang) {
+      for (let i = messages.length - 1; i >= 0; i--) {
+        if (messages[i].role === 'user') { messages[i] = { ...messages[i], content: String(messages[i].content) + LANG_REMINDER[lang] }; break; }
+      }
+    }
     const sysParts = [];
+    if (lang) sysParts.push(LANG_RULE[lang]);
     const userSys = String(body.systemPrompt ?? settings.systemPrompt ?? '').trim();
     if (route === 'code' || body.workspace === 'code') sysParts.push(String(settings.codeSystemPrompt || '').trim() || CODE_PROMPT_AR);
     if (userSys) sysParts.push(userSys);
@@ -91,7 +120,7 @@ function createChat(hooks = {}) {
     if (think !== undefined) payload.think = think;
     return {
       payload,
-      meta: { model, route, auto, reason: intent.reason, why, think: think ?? null, caps, ...(extra?.meta || {}) },
+      meta: { model, route, auto, reason: intent.reason, why, think: think ?? null, caps, lang, ...(extra?.meta || {}) },
     };
   }
 
@@ -107,18 +136,54 @@ function createChat(hooks = {}) {
     const out = ndjson(c.res);
     out.write({ meta: built.meta });
     if (built.image) return out.end({ done: true, image: true });
-    const ac = new AbortController();
-    c.res.on('close', () => ac.abort());
+    let closed = false;
+    c.res.on('close', () => { closed = true; });
     try {
-      await ollama.chatStream(built.payload, { signal: ac.signal, onLine: (j) => out.write(j) });
+      await streamGuarded(built, out, () => closed);
       out.end();
     } catch (e) {
-      if (e.name === 'AbortError') return;
+      if (e.name === 'AbortError' || closed) return;
       log.warn('chat failed', { model: built.payload.model, err: e.message });
       out.end({ error: mapChatError(e) });
     }
   }
   return { handle, build };
+}
+
+// بث مع حارس اللغة: إعادة واحدة بتعليمات أشد وحرارة أقل، ثم حذف الحروف الأجنبية
+async function streamGuarded(built, out, isClosed) {
+  const lang = built.meta.lang;
+  const payload = built.payload;
+  for (let attempt = 0; ; attempt++) {
+    const ac = new AbortController();
+    const poll = setInterval(() => { if (isClosed()) ac.abort(); }, 250);
+    let content = ''; let tripped = false;
+    const strip = !!lang && attempt >= 1;
+    try {
+      await ollama.chatStream(payload, {
+        signal: ac.signal,
+        onLine: (j) => {
+          if (lang && j.message?.content) {
+            if (strip) j.message.content = j.message.content.replace(FOREIGN_G, '');
+            else {
+              content += j.message.content;
+              if (FOREIGN.test(outsideCode(content))) { tripped = true; ac.abort(); return; }
+            }
+          }
+          out.write(j);
+        },
+      });
+    } catch (e) {
+      if (!tripped) throw e;
+    } finally { clearInterval(poll); }
+    if (!tripped || isClosed()) return;
+    log.info('language guard: regenerating', { model: payload.model, lang });
+    out.write({ reset: true, reason: 'language' });
+    payload.options = { ...payload.options, temperature: Math.min(Number(payload.options?.temperature) || 0.7, 0.3) };
+    const sys = payload.messages[0]?.role === 'system' ? payload.messages[0] : null;
+    const strict = lang === 'ar' ? 'تنبيه مهم: كتبتَ بلغة غير العربية في محاولة سابقة. اكتب الرد كاملًا بالعربية فقط، كلمة بكلمة، دون أي حرف صيني.' : 'Important: write the whole answer in English only, with no Chinese characters.';
+    if (sys) sys.content += '\n' + strict; else payload.messages.unshift({ role: 'system', content: strict });
+  }
 }
 
 function sendErr(res, e) {
@@ -148,4 +213,4 @@ function mapChatError(e) {
   return m;
 }
 
-module.exports = { createChat, mapChatError, thinkValue, ChatError, CODE_PROMPT_AR };
+module.exports = { createChat, mapChatError, thinkValue, ChatError, CODE_PROMPT_AR, detectLang, FOREIGN };

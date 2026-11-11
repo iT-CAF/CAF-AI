@@ -11,6 +11,30 @@ export const EXT = {
 };
 export const RUNNABLE = new Set(['javascript', 'js', 'python', 'py', 'html', 'svg']);
 
+// اتجاه كل كتلة حسب نصها: العربية (حتى مع كلمات إنجليزية مثل HTML وCSS) ← RTL، وإلا LTR
+const AR_RE = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/g;
+export function dirOf(text) {
+  const s = String(text || '').replace(/`[^`]*`/g, ' ').replace(/https?:\/\/\S+/g, ' ').replace(/<[^>]+>/g, ' ');
+  const ar = (s.match(AR_RE) || []).length;
+  if (!ar) return 'ltr';
+  const lat = (s.match(/[A-Za-z]/g) || []).length;
+  return ar * 3 >= lat ? 'rtl' : 'ltr';
+}
+const D = (text) => ` dir="${dirOf(text)}"`;
+
+// يستبدل الكتل التي تغيّر مصدرها فقط (البث بلا وميض؛ الكتل المكتملة تبقى كما هي مع تلوينها)
+export function morph(container, html) {
+  const tpl = document.createElement('template'); tpl.innerHTML = html;
+  const fresh = [...tpl.content.childNodes]; const old = [...container.childNodes];
+  for (let i = 0; i < fresh.length; i++) {
+    const f = fresh[i]; const src = f.nodeType === 1 ? f.outerHTML : f.textContent; const o = old[i];
+    if (o && o.__src === src) continue;
+    f.__src = src;
+    if (o) container.replaceChild(f, o); else container.appendChild(f);
+  }
+  for (let i = fresh.length; i < old.length; i++) old[i].remove();
+}
+
 function inline(s) {
   const codes = []; const maths = [];
   s = s.replace(/`([^`\n]+)`/g, (_, c) => { codes.push(c); return `\u0000c${codes.length - 1}\u0000`; });
@@ -30,15 +54,13 @@ function inline(s) {
     .replace(/\u0000m(\d+)\u0000/g, (_, i) => `<span class="math" data-tex="${esc(maths[+i])}">${esc(maths[+i])}</span>`);
 }
 
-let blockSeq = 0;
-function codeBlock(lang, code, { live }) {
+function codeBlock(lang, code, { live, open }) {
   const l = (lang || '').toLowerCase();
-  if (l === 'mermaid' && !live) return `<div class="mermaid-box" data-src="${esc(code)}"><pre class="mermaid-src">${esc(code)}</pre></div>`;
+  if (l === 'mermaid' && !open) return `<div class="mermaid-box" data-src="${esc(code)}"><pre class="mermaid-src">${esc(code)}</pre></div>`;
   const lines = code.split('\n').length;
-  const id = ++blockSeq;
-  const run = RUNNABLE.has(l) ? `<button type="button" class="mini" data-run="${id}" title="${esc(t('runCode'))}">${ic('play')}<span>${esc(t('run'))}</span></button>` : '';
+  const run = RUNNABLE.has(l) ? `<button type="button" class="mini" data-run="1" title="${esc(t('runCode'))}">${ic('play')}<span>${esc(t('run'))}</span></button>` : '';
   const wrap = state.settings?.wrapCode ? ' wrap' : '';
-  return `<div class="codeblock${wrap}" data-lang="${esc(l)}" data-block="${id}"><div class="bar"><span class="lang">${esc(l || 'code')}</span><span class="tools">`
+  return `<div class="codeblock${wrap}" data-lang="${esc(l)}"${open ? ' data-live="1"' : ''}><div class="bar"><span class="lang">${esc(l || 'code')}</span><span class="tools">`
     + `${run}<button type="button" class="mini" data-canvas title="${esc(t('openCanvas'))}">${ic('panel')}</button>`
     + `<button type="button" class="mini" data-wrap title="${esc(t('wrapLines'))}">${ic('wrap')}</button>`
     + `<button type="button" class="mini" data-dl title="${esc(t('downloadFile'))}">${ic('download')}</button>`
@@ -59,7 +81,7 @@ export function renderMd(src, { live = false } = {}) {
       while (i < lines.length && !lines[i].trim().startsWith(close)) buf.push(lines[i++]);
       const open = i >= lines.length; // الكتلة لم تُغلق بعد (أثناء البث)
       i++;
-      out.push(codeBlock(fence[2], buf.join('\n'), { live: live && open }));
+      out.push(codeBlock(fence[2], buf.join('\n'), { live, open: live && open }));
       continue;
     }
     // رياضيات كتلية $$ … $$ أو \[ … \]
@@ -78,29 +100,29 @@ export function renderMd(src, { live = false } = {}) {
       continue;
     }
     let m;
-    if ((m = ln.match(/^(#{1,6})\s+(.*)$/))) { const n = Math.min(4, m[1].length); out.push(`<h${n}>${inline(m[2])}</h${n}>`); i++; continue; }
+    if ((m = ln.match(/^(#{1,6})\s+(.*)$/))) { const n = Math.min(4, m[1].length); out.push(`<h${n}${D(m[2])}>${inline(m[2])}</h${n}>`); i++; continue; }
     if (/^\s*(---+|\*\*\*+|___+)\s*$/.test(ln)) { out.push('<hr>'); i++; continue; }
     if (isTable(ln, lines[i + 1])) {
       const cells = (r) => r.trim().replace(/^\||\|$/g, '').split('|').map((c) => inline(c.trim()));
       const aligns = lines[i + 1].trim().replace(/^\||\|$/g, '').split('|').map((c) => (/^\s*:-+:\s*$/.test(c) ? 'center' : /-+:\s*$/.test(c) ? 'end' : ''));
-      const head = cells(ln); i += 2; const rows = [];
+      const tdir = D(ln); const head = cells(ln); i += 2; const rows = [];
       while (i < lines.length && lines[i].includes('|') && lines[i].trim()) rows.push(cells(lines[i++]));
       const td = (c, j, tag) => `<${tag}${aligns[j] ? ` style="text-align:${aligns[j]}"` : ''}>${c}</${tag}>`;
-      out.push(`<div class="table-wrap"><table><thead><tr>${head.map((c, j) => td(c, j, 'th')).join('')}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((c, j) => td(c, j, 'td')).join('')}</tr>`).join('')}</tbody></table></div>`);
+      out.push(`<div class="table-wrap"${tdir}><table><thead><tr>${head.map((c, j) => td(c, j, 'th')).join('')}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((c, j) => td(c, j, 'td')).join('')}</tr>`).join('')}</tbody></table></div>`);
       continue;
     }
     if (/^\s*>\s?/.test(ln)) {
       const buf = [];
       while (i < lines.length && /^\s*>\s?/.test(lines[i])) buf.push(lines[i++].replace(/^\s*>\s?/, ''));
-      out.push(`<blockquote>${renderMd(buf.join('\n'))}</blockquote>`); continue;
+      out.push(`<blockquote${D(buf.join(' '))}>${renderMd(buf.join('\n'))}</blockquote>`); continue;
     }
     if (/^\s*([-*+])\s+/.test(ln) || /^\s*\d+[.)]\s+/.test(ln)) {
-      const ordered = /^\s*\d+[.)]\s+/.test(ln); const items = [];
+      const ordered = /^\s*\d+[.)]\s+/.test(ln); const items = []; const raw = [];
       const re = ordered ? /^\s*\d+[.)]\s+(.*)$/ : /^\s*[-*+]\s+(.*)$/;
       const startNum = ordered ? parseInt(ln.match(/^\s*(\d+)/)[1], 10) : 1;
       while (i < lines.length) {
         if (re.test(lines[i])) {
-          let txt = lines[i++].match(re)[1];
+          let txt = lines[i++].match(re)[1]; raw.push(txt);
           const task = txt.match(/^\[( |x|X)\]\s+(.*)$/);
           // أسطر تابعة بمسافة بادئة (قائمة متداخلة بسيطة)
           const sub = [];
@@ -110,12 +132,12 @@ export function renderMd(src, { live = false } = {}) {
         } else if (!lines[i].trim() && i + 1 < lines.length && re.test(lines[i + 1])) i++;
         else break;
       }
-      out.push(`<${ordered ? 'ol' : 'ul'}${ordered && startNum !== 1 ? ` start="${startNum}"` : ''}>${items.map((x) => `<li>${x}</li>`).join('')}</${ordered ? 'ol' : 'ul'}>`); continue;
+      out.push(`<${ordered ? 'ol' : 'ul'}${D(raw.join(' '))}${ordered && startNum !== 1 ? ` start="${startNum}"` : ''}>${items.map((x) => `<li>${x}</li>`).join('')}</${ordered ? 'ol' : 'ul'}>`); continue;
     }
     if (!ln.trim()) { i++; continue; }
     const buf = [];
     while (i < lines.length && lines[i].trim() && !/^(\s*(```|~~~)|#{1,6}\s|\s*>|\s*[-*+]\s|\s*\d+[.)]\s|\s*(\$\$|\\\[))/.test(lines[i]) && !isTable(lines[i], lines[i + 1])) buf.push(lines[i++]);
-    out.push(`<p dir="auto">${inline(buf.join('\n')).replace(/\n/g, '<br>')}</p>`);
+    out.push(`<p${D(buf.join(' '))}>${inline(buf.join('\n')).replace(/\n/g, '<br>')}</p>`);
   }
   return out.join('');
 }
@@ -134,7 +156,7 @@ const ensureMermaid = () => (mermaidReady ||= loadScript('/vendor/mermaid/mermai
 let mermaidSeq = 0;
 export async function enhance(root) {
   if (!root) return;
-  const codes = root.querySelectorAll('.codeblock:not([data-hl]) pre.src code');
+  const codes = root.querySelectorAll('.codeblock:not([data-hl]):not([data-live]) pre.src code');
   if (codes.length) {
     try {
       await ensureHljs();
@@ -190,7 +212,7 @@ export function splitThink(content) {
 
 // اسم الملف المقترح من «**الملف:** `name.ext`» أو تعليق في أول سطر
 export function guessFileName(code, lang, contextBefore = '') {
-  const m = /(?:الملف|File|file|filename)\s*[:：]\s*\**\s*`([^`\n]{1,120})`/.exec(contextBefore.slice(-300));
+  const m = /(?:الملف|اسم الملف|File|file|filename)\s*[:：]\s*\**\s*`?([\w./-]{1,120}\.[A-Za-z0-9]{1,8})`?/.exec(contextBefore.slice(-300));
   if (m && /^[\w./-]+$/.test(m[1])) return m[1].split('/').pop();
   const first = (code.split('\n')[0] || '').trim();
   const c = /^(?:\/\/|#|<!--|\/\*|--)\s*([\w.-]+\.[A-Za-z0-9]{1,8})\b/.exec(first);

@@ -58,7 +58,7 @@ function startMock({ models = DEFAULT_MODELS, port = 0 } = {}) {
         res.writeHead(200, { 'Content-Type': 'application/x-ndjson' });
         const thinkOn = j.think && j.think !== false && m.caps.includes('thinking');
         if (thinkOn) res.write(JSON.stringify({ model: j.model, message: { role: 'assistant', content: '', thinking: 'أفكر… ' }, done: false }) + '\n');
-        const reply = `echo(${j.model}): ${last.content}${last.images ? ` [images:${last.images.length}]` : ''}`;
+        const reply = /CJK/.test(last.content) ? 'هذه إجابة 这是中文 بالعربية' : `echo(${j.model}): ${last.content}${last.images ? ` [images:${last.images.length}]` : ''}`;
         for (const part of reply.match(/.{1,8}/gs) || []) res.write(JSON.stringify({ model: j.model, message: { role: 'assistant', content: part }, done: false }) + '\n');
         res.end(JSON.stringify({ model: j.model, message: { role: 'assistant', content: '' }, done: true, eval_count: 20, eval_duration: 1e9, prompt_eval_count: 10 }) + '\n');
         return;

@@ -24,6 +24,14 @@ export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 export const TOKEN = document.querySelector('meta[name="caf-token"]')?.content || '';
 export const authHeaders = (extra) => ({ 'X-CAF-Token': TOKEN, ...(extra || {}) });
 
+// أُعيد تشغيل كآف AI (رمز جلسة جديد): نحدّث الصفحة مرة واحدة تلقائيًا
+function sessionExpired() {
+  const last = Number(sessionStorage.getItem('caf-reload') || 0);
+  if (Date.now() - last < 15000) return;
+  sessionStorage.setItem('caf-reload', String(Date.now()));
+  setTimeout(() => location.reload(), 300);
+}
+
 export class ApiError extends Error {
   constructor(code, status, data) { super(code); this.code = code; this.status = status; this.data = data || {}; }
 }
@@ -35,6 +43,7 @@ export async function api(method, url, body, { signal, raw } = {}) {
     headers: authHeaders(body && !isBin ? { 'Content-Type': 'application/json' } : body instanceof Blob ? { 'Content-Type': body.type || 'application/octet-stream' } : {}),
     body: body === undefined ? undefined : isBin ? body : JSON.stringify(body),
   });
+  if (r.status === 401) sessionExpired();
   if (raw) return r;
   let data = null;
   try { data = await r.json(); } catch { /* */ }

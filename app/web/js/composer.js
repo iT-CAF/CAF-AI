@@ -1,6 +1,6 @@
 /* CAF AI · © 2026 كآف · iT CAF — جميع الحقوق محفوظة. */
 // صندوق الكتابة: النص، المرفقات المعلّقة (صور/ملفات)، والأوامر. وحدات أخرى تضيف أنواع مرفقات وأوامر.
-import { state, $, t, esc, ic, emit } from './core.js';
+import { state, $, t, esc, ic, emit, on } from './core.js';
 import { send } from './chat.js';
 
 // كل مرفق معلّق: { key, kind:'image'|'file'|'folder', label, thumb?, remove(), payload }
@@ -42,6 +42,47 @@ export async function submit() {
   input.value = ''; autoGrow();
   clearPending();
   return send(text, opts);
+}
+
+// قائمة الإرفاق (📎): كل وحدة تضيف عنصرًا { id, icon, label(), run(), visible?() }
+export const attachItems = [];
+function renderAttach() {
+  const left = $('composerLeft');
+  if (!attachItems.length) { left.innerHTML = ''; return; }
+  left.innerHTML = `<button type="button" class="btn icon-only" id="attachBtn" aria-haspopup="menu" aria-expanded="false" title="${esc(t('attach'))}" aria-label="${esc(t('attach'))}">${ic('clip')}</button>`;
+  $('attachBtn').onclick = (e) => {
+    e.stopPropagation();
+    let m = $('attachMenu');
+    if (m) { m.remove(); $('attachBtn').setAttribute('aria-expanded', 'false'); return; }
+    m = document.createElement('div'); m.id = 'attachMenu'; m.className = 'pop-menu'; m.setAttribute('role', 'menu');
+    m.innerHTML = attachItems.filter((a) => !a.visible || a.visible()).map((a) => `<button type="button" role="menuitem" data-att="${esc(a.id)}">${ic(a.icon)}<span>${esc(a.label())}</span></button>`).join('');
+    $('composer').appendChild(m);
+    $('attachBtn').setAttribute('aria-expanded', 'true');
+    m.querySelector('button')?.focus();
+    m.onclick = (ev) => { const b = ev.target.closest('[data-att]'); if (!b) return; m.remove(); $('attachBtn').setAttribute('aria-expanded', 'false'); attachItems.find((a) => a.id === b.dataset.att)?.run(); };
+    m.onkeydown = (ev) => {
+      const items = [...m.querySelectorAll('button')]; const i = items.indexOf(document.activeElement);
+      if (ev.key === 'ArrowDown') { ev.preventDefault(); items[(i + 1) % items.length].focus(); }
+      if (ev.key === 'ArrowUp') { ev.preventDefault(); items[(i - 1 + items.length) % items.length].focus(); }
+      if (ev.key === 'Escape') { m.remove(); $('attachBtn').focus(); }
+    };
+    setTimeout(() => document.addEventListener('click', function close(ev) { if (!m.contains(ev.target)) { m.remove(); $('attachBtn')?.setAttribute('aria-expanded', 'false'); } document.removeEventListener('click', close); }), 0);
+  };
+}
+export function addAttachItem(item) { attachItems.push(item); renderAttach(); }
+on('ui:applied', renderAttach);
+
+// اختيار ملفات من الجهاز (بدون رفعها لأي مكان: تُقرأ في المتصفح)
+export function pickFiles({ accept = '', multiple = true, directory = false } = {}) {
+  return new Promise((resolve) => {
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.multiple = multiple; if (accept) inp.accept = accept;
+    if (directory) { inp.webkitdirectory = true; inp.setAttribute('webkitdirectory', ''); }
+    inp.style.display = 'none';
+    inp.onchange = () => { resolve([...inp.files]); inp.remove(); };
+    inp.addEventListener('cancel', () => { resolve([]); inp.remove(); });
+    document.body.appendChild(inp); inp.click();
+  });
 }
 
 export function bindComposer() {

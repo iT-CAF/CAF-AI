@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>preview</title></head>
+<body>
+<script>
+// CAF AI · إطار المعاينة المعزول: أصل معتم (sandbox بدون allow-same-origin) وCSP بلا أي اتصال شبكة.
+// يستقبل HTML من الواجهة الأم فقط، ويعيد مخرجات console والأخطاء إليها.
+(function () {
+  var parentWin = window.parent;
+  var bridge = '<script>(function(){var P=window.parent;function s(t,a){try{P.postMessage({caf:"preview",type:t,text:Array.prototype.map.call(a,function(x){try{return typeof x==="string"?x:JSON.stringify(x)}catch(e){return String(x)}}).join(" ")},"*")}catch(e){}}'
+    + '["log","info","warn","error","debug"].forEach(function(k){var o=console[k];console[k]=function(){s(k,arguments);try{o.apply(console,arguments)}catch(e){}}});'
+    + 'window.addEventListener("error",function(e){s("error",[e.message+(e.lineno?" (line "+e.lineno+")":"")])});'
+    + 'window.addEventListener("unhandledrejection",function(e){s("error",[String(e.reason)])});})();<\/script>';
+  window.addEventListener('message', function (e) {
+    if (e.source !== parentWin || !e.data || e.data.caf !== 'render') return;
+    var html = String(e.data.html || '');
+    if (!/<html[\s>]/i.test(html)) html = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body>' + html + '</body></html>';
+    html = /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, function (m) { return m + bridge; }) : bridge + html;
+    document.open(); document.write(html); document.close();
+  });
+  parentWin.postMessage({ caf: 'preview', type: 'ready' }, '*');
+})();
+</script>
+</body></html>

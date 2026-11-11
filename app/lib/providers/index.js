@@ -42,5 +42,6 @@ async function statusAll() {
 }
 
 register(require('./ollama'));
+register(require('./pyodide'));
 
 module.exports = { register, get, all, resolve, statusAll, ORDER };

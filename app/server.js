@@ -20,7 +20,7 @@ const router = createRouter();
 const ctx = { chat: createChat(), shutdown: (code) => shutdown(code), router };
 
 // تسجيل المسارات (كل وحدة تضيف مساراتها)
-for (const mod of ['core', 'hardware']) require(`./lib/routes/${mod}`)(router, ctx);
+for (const mod of ['core', 'hardware', 'addons', 'canvas']) require(`./lib/routes/${mod}`)(router, ctx);
 
 // ---------- الملفات الثابتة ----------
 const STATIC_CACHE = new Set(['.woff2', '.svg', '.png', '.wasm']);

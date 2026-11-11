@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "verified": "Asset URLs, sizes and digests checked on 2026-11-11 (GitHub release digests, npm integrity, Hugging Face LFS sha256).",
+  "engines": {
+    "pyodide": {
+      "name": "Pyodide", "version": "314.0.7", "license": "MPL-2.0", "homepage": "https://pyodide.org", "capability": "code-run",
+      "assets": {
+        "any": { "url": "https://registry.npmjs.org/pyodide/-/pyodide-314.0.7.tgz", "size": 6488647, "hash": "sha512-0YvXxEhfEdpLfb/XkM2BFAeMROq0iMUX2bzzH9pOttyMcWkwq+HbE5uyuGD82LN7y2q+SNvi/6V5JEsOlD2R1A==", "type": "tgz", "strip": 1, "include": ["pyodide.mjs", "pyodide.asm.mjs", "pyodide.asm.wasm", "python_stdlib.zip", "pyodide-lock.json", "package.json"] }
+      },
+      "check": "pyodide.mjs"
+    }
+  },
+  "models": {}
+}
