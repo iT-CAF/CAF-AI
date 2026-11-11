@@ -9,7 +9,7 @@ AMBER=$'\033[38;2;232;163;61m'; GREEN=$'\033[38;2;95;179;161m'; GRAY=$'\033[38;2
 
 echo
 echo "  ${AMBER}${B}>${OFF} ${B}CAF AI${OFF}  ${GRAY}·${OFF}  ${B}كآف AI${OFF}"
-echo "  ${GRAY}by CAF · iT CAF · store.it-caf.com${OFF}"
+echo "  ${GRAY}by CAF · iT CAF · it-caf.com · github.com/iT-CAF/CAF-AI${OFF}"
 echo "  ${GRAY}────────────────────────────────────────────────────${OFF}"
 
 HERE=""; [ -n "${BASH_SOURCE[0]:-}" ] && HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)" || true

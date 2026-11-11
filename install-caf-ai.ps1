@@ -6,7 +6,7 @@ $Repo = "iT-CAF/CAF-AI"
 $CafHome = if ($env:CAF_HOME) { $env:CAF_HOME } else { Join-Path $env:LOCALAPPDATA "CAF-AI" }
 Write-Host ""
 Write-Host "  > CAF AI" -ForegroundColor Yellow
-Write-Host "  by CAF · iT CAF · store.it-caf.com" -ForegroundColor DarkGray
+Write-Host "  by CAF · iT CAF · it-caf.com · github.com/iT-CAF/CAF-AI" -ForegroundColor DarkGray
 Write-Host "  ----------------------------------------------------" -ForegroundColor DarkGray
 
 $here = $PSScriptRoot

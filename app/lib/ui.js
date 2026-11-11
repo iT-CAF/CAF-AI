@@ -29,7 +29,7 @@ function banner() {
   const year = new Date().getFullYear();
   say('');
   say(`  ${amber(bold('>'))} ${bold('CAF AI')}  ${gray('·')}  ${bold('كآف AI')}   ${gray('v' + VERSION)}`);
-  say(`  ${gray(`by CAF · iT CAF · store.it-caf.com · © ${year}`)}`);
+  say(`  ${gray(`by CAF · iT CAF · it-caf.com · github.com/iT-CAF/CAF-AI · © ${year}`)}`);
   say(`  ${gray('─'.repeat(52))}`);
 }
 

@@ -82,6 +82,12 @@ async function apply({ update = () => {}, signal } = {}) {
   try {
     fs.renameSync(P.root, backup);
     fs.renameSync(stage, P.root);
+    // أي مجلد أو ملف علوي ليس جزءًا من الإصدار (مثل بيانات محمولة CAF_HOME داخل مجلد البرنامج، أو engine/ و models/ و data/)
+    // يعود إلى مكانه كما هو — التحديث يستبدل ملفات البرنامج فقط ولا يمس بيانات المستخدم
+    for (const e of fs.readdirSync(backup)) {
+      if (e.startsWith('.update-') || fs.existsSync(path.join(P.root, e))) continue;
+      try { fs.renameSync(path.join(backup, e), path.join(P.root, e)); } catch (err) { log.warn('update: could not carry over', { entry: e, err: err.message }); }
+    }
   } catch (e) {
     // ويندوز قد يرفض إعادة تسمية مجلد قيد الاستخدام: ننسخ فوق الملفات بدلًا من ذلك
     if (!fs.existsSync(P.root) && fs.existsSync(backup)) fs.renameSync(backup, P.root);

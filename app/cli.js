@@ -110,8 +110,8 @@ function runUpdate() {
 function about() {
   ui.clear(); ui.banner(); say('');
   say(`  ${bold('CAF AI')} v${VERSION}`);
-  say(`  © ${new Date().getFullYear()} ${tr('كآف · iT CAF — جميع الحقوق محفوظة', 'CAF · iT CAF — All rights reserved')}`);
-  say(`  ${amber('https://store.it-caf.com')}`); say('');
+  say(`  © ${new Date().getFullYear()} ${tr('كآف · iT CAF — برمجة وتصميم كآف · جميع الحقوق محفوظة', 'CAF · iT CAF — designed & built by CAF · All rights reserved')}`);
+  say(`  ${amber('https://it-caf.com')}  ${gray('·')}  ${amber('https://github.com/iT-CAF/CAF-AI')}`); say('');
   say(`  ${gray(tr('البيانات: ', 'Data: ') + P.home)}`);
   say(`  ${gray(tr('النماذج: ', 'Models: ') + P.models)}`);
   say(`  ${gray(tr('الرخصة: ملف LICENSE في المشروع', 'License: see LICENSE in the project'))}`); say('');
