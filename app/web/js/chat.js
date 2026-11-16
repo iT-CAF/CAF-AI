@@ -53,7 +53,8 @@ export async function openChat(id) {
 export async function persist() {
   if (!state.chat || !state.chat.messages.length) return;
   const body = { ...state.chat, messages: state.chat.messages.map(({ live, ...m }) => m) };
-  try { await api('PUT', '/api/chats/' + state.chat.id, body); } catch { /* سيُعاد المحاولة مع الرسالة التالية */ }
+  const chat = state.chat;
+  try { const r = await api('PUT', '/api/chats/' + chat.id, body); if (r?.updated) chat.updated = r.updated; } catch { /* سيُعاد المحاولة مع الرسالة التالية */ }
   await loadChats();
 }
 

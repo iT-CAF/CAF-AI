@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="__LANG__" dir="__DIR__" data-theme="dark" data-theme-pref="__THEME__">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0E1113">
+  <meta name="robots" content="noindex">
+  <title>كآف AI · CAF AI</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/brand/itcaf-monogram-app-icon-512.png">
+  <link rel="stylesheet" href="/brand/itcaf-colors.css">
+  <link rel="stylesheet" href="/pair.css?v=__CAF_VERSION__">
+  <script src="/js/pair.js?v=__CAF_VERSION__" defer></script>
+</head>
+<body>
+  <main class="pair" aria-live="polite">
+    <header class="pair-brand">
+      <img class="logo logo-dark" src="/brand/itcaf-horizontal-on-graphite-anim.svg" alt="iT CAF · كآف">
+      <img class="logo logo-light" src="/brand/itcaf-horizontal-on-bone-anim.svg" alt="iT CAF · كآف">
+    </header>
+
+    <section class="pair-card" id="card">
+      <div class="pair-orb" id="orb" aria-hidden="true"><span class="ic" id="orbIc"></span></div>
+      <p class="pair-eyebrow" dir="ltr" id="host"></p>
+      <h1 id="title"></h1>
+      <p class="pair-sub" id="sub"></p>
+      <p class="pair-alert" id="alert" hidden></p>
+
+      <form class="pair-form" id="form" hidden>
+        <label for="name" id="nameLbl"></label>
+        <input id="name" name="name" maxlength="40" autocomplete="off" autocapitalize="words" enterkeyhint="send">
+        <button type="submit" class="pair-btn primary" id="reqBtn"></button>
+        <p class="pair-or" id="orScan"></p>
+      </form>
+
+      <div class="pair-wait" id="wait" hidden>
+        <ol class="pair-steps" id="steps"></ol>
+        <p class="pair-timer" id="timer"></p>
+        <button type="button" class="pair-btn" id="cancelBtn"></button>
+      </div>
+
+      <button type="button" class="pair-btn primary" id="retryBtn" hidden></button>
+    </section>
+
+    <footer class="pair-foot">
+      <p><span class="ic lock" aria-hidden="true"></span><span id="foot"></span></p>
+      <p class="rights">© iT CAF · CAF AI v__CAF_VERSION__</p>
+    </footer>
+  </main>
+</body>
+</html>

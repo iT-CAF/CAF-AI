@@ -1,6 +1,6 @@
 /* CAF AI · © 2026 كآف · iT CAF — جميع الحقوق محفوظة. */
 // الإعدادات: تنقّل جانبي بين الأقسام. الوحدات تضيف أقسامها عبر settingsSections: { id, icon, label(), render(el) }
-import { state, $, t, esc, ic, api, toast, emit, confirmBox, errText } from './core.js';
+import { state, $, t, esc, ic, api, toast, emit, confirmBox, errText, CLIENT } from './core.js';
 import { chatModels } from './models.js';
 
 export const settingsSections = [];
@@ -60,12 +60,12 @@ const SECTIONS = [
       ${row(t('dataFolder'), t('dataFolderHint'), `<code class="path" dir="ltr">${esc(state.info?.home || '')}</code>`)}
       <div id="dataExtra"></div>
       <div class="danger-zone"><h4>${ic('alert')}${esc(t('dangerZone'))}</h4>
-        <div class="row wrap"><button type="button" class="btn danger" id="wipeChats">${ic('trash')}<span>${esc(t('deleteAll'))}</span></button><button type="button" class="btn" id="quitApp">${ic('close')}<span>${esc(t('quit'))}</span></button></div></div>`;
+        <div class="row wrap"><button type="button" class="btn danger" id="wipeChats">${ic('trash')}<span>${esc(t('deleteAll'))}</span></button>${CLIENT === 'device' ? '' : `<button type="button" class="btn" id="quitApp">${ic('close')}<span>${esc(t('quit'))}</span></button>`}</div></div>`;
     el.querySelector('#wipeChats').onclick = async () => {
       if (!(await confirmBox(t('confirmDeleteAll'), { danger: true, ok: t('delete') }))) return;
       try { await api('DELETE', '/api/chats'); emit('chats:wiped'); toast(t('deleted')); } catch (e) { toast(errText(e)); }
     };
-    el.querySelector('#quitApp').onclick = async () => {
+    if (el.querySelector('#quitApp')) el.querySelector('#quitApp').onclick = async () => {
       if (!(await confirmBox(t('confirmQuit')))) return;
       try { await api('POST', '/api/quit'); } catch { /* */ }
       document.body.innerHTML = `<p class="quit-done">${esc(t('quitDone'))}</p>`;

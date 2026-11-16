@@ -121,12 +121,18 @@ function getChat(id) {
   const c = readJsonFile(chatFile(id));
   return c ? normalizeChat(c, id) : null;
 }
+// رقم مراجعة المحادثات: يتغيّر مع كل حفظ أو حذف، فتحدّث الأجهزة الأخرى (الجوال/الكمبيوتر) قائمتها تلقائيًا.
+// يبدأ من وقت التشغيل حتى تلاحظ الواجهة إعادة التشغيل أيضًا.
+let REV = Date.now();
+const rev = () => REV;
 function saveChat(id, c) {
   const chat = normalizeChat({ ...c, updated: Date.now() }, id);
   writeJsonAtomic(chatFile(id), chat);
+  REV++;
   return chat;
 }
 function deleteChat(id) {
+  REV++;
   try { fs.unlinkSync(chatFile(id)); } catch { /* غير موجود */ }
   for (const base of [P.attachments, path.join(P.data, 'files')]) { const dir = within(base, id); if (dir) fs.rmSync(dir, { recursive: true, force: true }); }
   // مجموعات المستندات الخاصة بهذه المحادثة فقط
@@ -185,6 +191,7 @@ function cleanOrphanAttachments(maxAgeMs = 2 * 86400000) {
 }
 
 module.exports = {
+  rev,
   cleanOrphanAttachments,
   CHAT_VERSION, ROLES, DEFAULT_SETTINGS, sanitizeSettings, readSettings, writeSettings,
   normalizeChat, listChats, getChat, saveChat, deleteChat, deleteAllChats, chatFile,

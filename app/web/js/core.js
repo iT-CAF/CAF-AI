@@ -30,6 +30,7 @@ export const ICONS = {
   loader: 'loader-circle', desktop: 'monitor', tablet: 'tablet', mobile: 'smartphone', sun: 'sun', moon: 'moon', menu: 'menu', up: 'arrow-up', down: 'arrow-down',
   ok: 'circle-check', fail: 'circle-x', filedown: 'file-down', database: 'server', chevron: 'chevron-down', help: 'circle-help', keyboard: 'keyboard', rocket: 'rocket', lifebuoy: 'life-buoy',
   reset: 'rotate-ccw', zap: 'zap', slash: 'square-slash', split: 'columns-2', info: 'info', filepen: 'file-pen-line', tag: 'tag',
+  wifi: 'wifi', wifioff: 'wifi-off', qr: 'qr-code',
 };
 export const iconUrl = (name) => (ICONS[name] ? `/brand/icons/ui/${ICONS[name]}.svg` : `/brand/icons/${name}.svg`);
 export const ic = (name, cls = '') => `<span class="ic ${cls}" style="--i:url(${iconUrl(name)})" aria-hidden="true"></span>`;
@@ -37,6 +38,20 @@ export const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().t
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export const TOKEN = document.querySelector('meta[name="caf-token"]')?.content || '';
+// owner = هذا الكمبيوتر · device = جوال أو جهاز مقترن عبر الشبكة المحلية (تُخفى عنه أدوات الإدارة)
+export const CLIENT = document.querySelector('meta[name="caf-client"]')?.content === 'device' ? 'device' : 'owner';
+
+// النسخ من الجوال: العنوان المحلي عبر http ليس سياقًا آمنًا فلا توجد حافظة المتصفح الحديثة؛ بديل يعمل داخل نقرة المستخدم
+if (!navigator.clipboard) {
+  const writeText = (s) => new Promise((resolve, reject) => {
+    const ta = document.createElement('textarea');
+    ta.value = String(s); ta.setAttribute('readonly', ''); ta.className = 'copy-shim';
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, ta.value.length);
+    let done = false; try { done = document.execCommand('copy'); } catch { /* */ }
+    ta.remove(); if (done) resolve(); else reject(new Error('copy_failed'));
+  });
+  try { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText, write: () => Promise.reject(new Error('insecure_context')) } }); } catch { /* */ }
+}
 export const authHeaders = (extra) => ({ 'X-CAF-Token': TOKEN, ...(extra || {}) });
 
 // أُعيد تشغيل كآف AI (رمز جلسة جديد): نحدّث الصفحة مرة واحدة تلقائيًا

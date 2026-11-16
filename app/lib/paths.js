@@ -60,6 +60,7 @@ const P = {
   catalogCache: path.join(DATA, 'catalog.json'),
   modelCaps: path.join(DATA, 'model-caps.json'),
   apiKey: path.join(DATA, 'api-key.txt'),
+  lan: path.join(DATA, 'lan.json'),
   tmp: path.join(DATA, 'tmp'),
 };
 

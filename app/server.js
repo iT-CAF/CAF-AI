@@ -13,6 +13,8 @@ const { createRouter } = require('./lib/router');
 const { migrate } = require('./lib/migrate');
 const { createChat } = require('./lib/chat');
 const log = require('./lib/log');
+const lan = require('./lib/lan');
+const store = require('./lib/store');
 const { tr, say, ok, info, step, amber } = ui;
 
 let httpPort = 0;
@@ -27,25 +29,42 @@ async function knowledgeContext({ body, text, settings }) {
   if (!hits.length) return { meta: { sources: [] } };
   return { system: rag.contextBlock(hits, settings.lang), meta: { sources: hits.map((h, i) => ({ n: i + 1, file: h.docName, loc: h.loc, doc: h.docId, text: h.text.slice(0, 400) })) } };
 }
-const ctx = { chat: createChat({ extraContext: knowledgeContext }), shutdown: (code) => shutdown(code), router };
+const ctx = { chat: createChat({ extraContext: knowledgeContext }), shutdown: (code) => shutdown(code), router, onShutdown: [() => lan.stop()] };
 
 // تسجيل المسارات (كل وحدة تضيف مساراتها)
-for (const mod of ['core', 'hardware', 'addons', 'canvas', 'skills', 'update', 'docs', 'images', 'voice', 'backup', 'v1']) require(`./lib/routes/${mod}`)(router, ctx);
+for (const mod of ['core', 'hardware', 'addons', 'canvas', 'skills', 'update', 'docs', 'images', 'voice', 'backup', 'v1', 'lan']) require(`./lib/routes/${mod}`)(router, ctx);
 
 // ---------- الملفات الثابتة ----------
 const STATIC_CACHE = new Set(['.woff2', '.svg', '.png', '.wasm']);
 let indexTemplate = null;
 function serveIndex(req, res) {
   if (!indexTemplate || process.env.CAF_DEV) indexTemplate = fs.readFileSync(path.join(P.web, 'index.html'), 'utf8');
-  const html = indexTemplate.replace('</head>', `  <meta name="caf-token" content="${sec.SESSION_TOKEN}">\n</head>`).replace(/__CAF_VERSION__/g, VERSION);
+  // caf-client: owner (هذا الجهاز) أو device (جوال/جهاز مقترن عبر الشبكة) — الواجهة تخفي أدوات الإدارة عن الأجهزة
+  const html = indexTemplate.replace('</head>', `  <meta name="caf-token" content="${sec.SESSION_TOKEN}">\n  <meta name="caf-client" content="${req.cafRole === 'device' ? 'device' : 'owner'}">\n</head>`).replace(/__CAF_VERSION__/g, VERSION);
   res.writeHead(200, { ...sec.appHeaders(), 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Set-Cookie': sec.sessionCookie() });
   res.end(req.method === 'HEAD' ? undefined : html);
 }
 
+// صفحة الاقتران للأجهزة غير المقترنة: بلا رمز جلسة، بلغة الواجهة ومظهرها
+let pairTemplate = null;
+function servePair(req, res) {
+  if (!pairTemplate || process.env.CAF_DEV) pairTemplate = fs.readFileSync(path.join(P.web, 'pair.html'), 'utf8');
+  const s = store.readSettings(); const ar = s.lang !== 'en';
+  const html = pairTemplate.replace(/__LANG__/g, ar ? 'ar' : 'en').replace(/__DIR__/g, ar ? 'rtl' : 'ltr').replace(/__THEME__/g, ['dark', 'light'].includes(s.theme) ? s.theme : 'system').replace(/__CAF_VERSION__/g, VERSION);
+  res.writeHead(200, { ...sec.appHeaders(), 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+  res.end(req.method === 'HEAD' ? undefined : html);
+}
+const redirect = (res, to) => { res.writeHead(302, { ...sec.appHeaders(), Location: to, 'Cache-Control': 'no-store' }); res.end(); };
+
 function serveStatic(req, res, url) {
   let rel;
   try { rel = decodeURIComponent(url.pathname); } catch { return send(res, 400, 'Bad request'); }
-  if (rel === '/' || rel === '/index.html') return serveIndex(req, res);
+  if (rel === '/pair' || rel === '/pair.html') return req.cafRole === 'guest' ? servePair(req, res) : redirect(res, '/');
+  if (rel === '/' || rel === '/index.html') {
+    // جهاز غير مقترن (أو أُزيل) يذهب إلى صفحة الاقتران؛ وصفحة الدردشة لا تُرسل له رمز الجلسة أبدًا
+    if (req.cafRole === 'guest') return redirect(res, lan.hasCookie(req) ? '/pair?e=revoked' : '/pair');
+    return serveIndex(req, res);
+  }
   const file = path.normalize(path.join(P.web, rel));
   if (file !== P.web && !file.startsWith(P.web + path.sep)) return send(res, 403, 'Forbidden');
   fs.readFile(file, (err, buf) => {
@@ -63,15 +82,24 @@ function serveStatic(req, res, url) {
 }
 
 // ---------- الخادم ----------
-const server = http.createServer(async (req, res) => {
+async function onRequest(req, res) {
   try {
-    if (!sec.hostOk(req)) return send(res, 403, 'Forbidden');
+    if (req.cafLan ? !lan.hostOk(req) : !sec.hostOk(req)) return send(res, 403, 'Forbidden');
+    // owner = هذا الجهاز · device = جهاز مقترن من الشبكة · guest = جهاز من الشبكة لم يُقرن بعد
+    req.cafRole = lan.classify(req);
     const url = new URL(req.url, `http://127.0.0.1:${httpPort}`);
     const hit = router.match(req.method, url.pathname);
     if (hit && hit.methodNotAllowed) return fail(res, 405, 'method_not_allowed');
     if (hit) {
       const o = hit.route.opts;
-      if (!o.public) {
+      if (req.cafRole !== 'owner') {
+        if (req.cafRole === 'guest' && !o.public && !o.lanPublic) return fail(res, 401, 'device_unpaired');
+        if (o.owner) return fail(res, 403, 'owner_only');
+        if (o.apiKey) return fail(res, 403, 'lan_api_blocked'); // ‎/v1‎ يبقى لتطبيقات هذا الجهاز فقط
+      } else if (o.lanPublic && !req.cafLan) return fail(res, 404, 'not_found');
+      if (o.lanPublic) {
+        if (req.method !== 'GET' && req.method !== 'HEAD' && !sec.originOk(req)) return fail(res, 403, 'bad_origin');
+      } else if (!o.public) {
         if (o.apiKey) {
           if (!sec.originOk(req)) return fail(res, 403, 'bad_origin');
         } else {
@@ -95,7 +123,8 @@ const server = http.createServer(async (req, res) => {
     if (!res.headersSent) fail(res, code, code === 413 ? 'too_large' : code === 400 ? 'bad_json' : 'server_error');
     else res.end();
   }
-});
+}
+const server = http.createServer(onRequest);
 server.requestTimeout = 0; // التوليد قد يطول على الأجهزة بدون GPU
 server.headersTimeout = 60000;
 
@@ -149,6 +178,7 @@ async function main() {
     tryListen(preferred);
   });
   sec.setPort(httpPort);
+  await lan.init({ port: httpPort, handler: onRequest });
   const url = `http://127.0.0.1:${httpPort}`;
   try {
     // الرمز محفوظ للطرفية (startcaf) فقط: الملف داخل CAF_HOME وبصلاحيات المالك
@@ -157,6 +187,7 @@ async function main() {
   } catch { /* */ }
   log.info('server started', { port: httpPort, version: VERSION, home: P.home });
   ok(`${tr('كآف AI يعمل', 'CAF AI is running')}  ${amber(url)}`);
+  for (const u of lan.urls()) ok(`${tr('الوصول من الشبكة', 'Network access')}  ${amber(u)}`);
   if (!noOpen) { step(tr('فتح الدردشة في المتصفح…', 'Opening the chat in your browser…')); openTarget(url); }
   say('');
   info(tr('محادثاتك محفوظة على جهازك فقط · للإيقاف اضغط Ctrl+C أو شغّل: startcaf stop', 'Your chats stay on this device · Press Ctrl+C or run: startcaf stop'));

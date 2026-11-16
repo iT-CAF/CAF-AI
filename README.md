@@ -2,7 +2,7 @@
 
 <img src="app/web/brand/itcaf-horizontal-on-graphite.svg" alt="iT CAF · كآف" width="380">
 
-# كآف AI · CAF AI — v1.2.0
+# كآف AI · CAF AI — v1.2.1
 
 **مساعدك الذكي الشامل على جهازك: محادثة، برمجة بلوحة حيّة، فهم الصور وتوليدها، مستندات، صوت، ومهارات — بلا إنترنت ولا اشتراك، وعربي أولًا.**
 
@@ -22,7 +22,13 @@
 
 # العربية
 
-## ما الجديد في 1.2.0؟
+## ما الجديد في 1.2.1؟
+
+| | الميزة |
+|---|---|
+| 📱 | **الوصول من الجوال:** صفحة «الوصول» الجديدة تعرض عنوان كآف AI على شبكتك (مثل `http://192.168.1.5:3737`) مع رمز QR. امسحه بالجوال أو افتح العنوان من أي جهاز على نفس شبكة Wi-Fi، ووافق على الطلب من الكمبيوتر — واستخدم كل شيء من الجوال مع مزامنة المحادثات. مطفأ افتراضيًا، وكل جهاز يحتاج موافقتك، ويمكنك إزالته في أي وقت. |
+
+## أبرز مزايا 1.2.0
 
 | | الميزة |
 |---|---|
@@ -121,6 +127,7 @@ startcaf
 
 - يعمل بالكامل على جهازك: بلا حسابات، بلا تتبع، بلا سحابة، وبلا أي CDN في الواجهة.
 - الخادم يستمع على `127.0.0.1` فقط، مع رمز جلسة وحماية من طلبات المواقع الأخرى (Host/Origin/CSP).
+- «الوصول من الشبكة» مطفأ افتراضيًا. عند تفعيله يستمع على عناوين الشبكة الخاصة فقط، وكل جهاز يحتاج اقترانًا (رمز QR لمرة واحدة أو موافقتك)، ويمكن إزالته فيُفصل فورًا.
 - لا يُنفَّذ أي أمر نظام من مخرجات النموذج إطلاقًا؛ تشغيل الكود داخل صندوق معزول في المتصفح بلا شبكة.
 
 ## التحديث والإزالة
@@ -157,7 +164,13 @@ startcaf
 
 # English
 
-## What's new in 1.2.0
+## What's new in 1.2.1
+
+| | Feature |
+|---|---|
+| 📱 | **Access from your phone:** the new “Access” page shows CAF AI’s address on your network (e.g. `http://192.168.1.5:3737`) with a QR code. Scan it with your phone or open the address from any device on the same Wi-Fi, approve it on the computer — then use everything from the phone, with chat sync. Off by default, every device needs your approval, and you can remove it any time. |
+
+## Highlights of 1.2.0
 
 | | Feature |
 |---|---|
@@ -239,6 +252,7 @@ The **My device** page measures your machine, suggests these automatically, and 
 
 - Runs entirely on your device: no accounts, no tracking, no cloud, no CDN in the UI.
 - The server listens on `127.0.0.1` only, with a session token and protection against other websites (Host/Origin/CSP).
+- “Network access” is off by default. When on, it listens on private network addresses only, and every device must pair (a one-time QR code or your approval); removing a device disconnects it immediately.
 - No system command is ever executed from model output; code runs in an isolated, network-less browser sandbox.
 
 ## Update & uninstall

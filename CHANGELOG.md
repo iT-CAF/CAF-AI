@@ -1,5 +1,18 @@
 # سجل التغييرات · Changelog
 
+## 1.2.1 — 2026-11-16
+
+الوصول إلى كآف AI من الجوال وأي جهاز على نفس شبكة Wi-Fi.
+Access CAF AI from your phone and any device on the same Wi-Fi.
+
+### جديد · Added
+- **الوصول من الجوال (صفحة «الوصول»):** افتح كآف AI من أي جهاز على نفس شبكة Wi-Fi. مفتاح تشغيل/إيقاف، عنوان الشبكة (مثل `http://192.168.1.5:3737`) مع رمز QR يُولَّد محليًا، اقتران فوري بمسح الرمز أو بطلب وصول توافق عليه من بطاقة تظهر على الكمبيوتر، قائمة الأجهزة المقترنة مع حالة الاتصال وإعادة التسمية والإزالة، ومزامنة المحادثات بين الأجهزة تلقائيًا.
+  Access from your phone (the “Access” page): an on/off switch, the network address with a locally generated QR code, instant pairing by scanning or by an access request you approve on the computer, a paired-devices list with online status, rename and remove, and automatic chat sync between devices.
+- **الأمان:** مطفأ افتراضيًا؛ يستمع على العناوين الخاصة فقط (10.x · 172.16–31.x · 192.168.x · 100.64/10) ويُغلق فورًا عند الإيقاف؛ رمز QR لمرة واحدة ويتجدد كل 5 دقائق؛ Cookie للجهاز `HttpOnly; SameSite=Strict` ونحفظ بصمته فقط؛ الإزالة فورية؛ فحص Host/Origin على مستمع الشبكة؛ إيقاف كآف AI وإدارة الوصول من الكمبيوتر فقط؛ و‎/v1‎ يبقى للكمبيوتر نفسه.
+  Security: off by default; private addresses only and closed immediately when off; one-time QR codes renewed every 5 minutes; an HttpOnly SameSite=Strict device cookie with only its hash stored; instant removal; Host/Origin checks on the network listener; quitting and access management stay on the computer; /v1 stays local.
+- النسخ يعمل على الجوال عبر الشبكة (بديل للحافظة خارج HTTPS)، ورسالة واضحة إن جُرّب الإدخال الصوتي عبر الشبكة.
+  Copy works on the phone over the network (a clipboard fallback outside HTTPS), with a clear message for voice input over the network.
+
 ## 1.2.0 — 2026-11-11
 
 إصدار كبير يحوّل كآف AI من دردشة محلية إلى مساعد شامل متعدد القدرات، مع الحفاظ على كل شيء محليًا وبلا إنترنت.

@@ -14,7 +14,9 @@ module.exports = function core(r, ctx) {
   r.add('GET', '/api/info', (c) => send(c.res, 200, {
     name: 'CAF AI', version: VERSION, owner: 'iT CAF', year: new Date().getFullYear(),
     site: 'https://it-caf.com', repo: 'https://github.com/iT-CAF/CAF-AI', store: 'https://store.it-caf.com',
-    platform: process.platform, arch: process.arch, home: P.home,
+    platform: process.platform, arch: process.arch,
+    // مسار البيانات لا يُكشف لجهاز من الشبكة لم يُقرن بعد
+    ...(c.req.cafRole === 'guest' ? {} : { home: P.home }),
   }), { public: true });
 
   r.add('GET', '/api/settings', (c) => send(c.res, 200, store.readSettings()));
@@ -63,7 +65,7 @@ module.exports = function core(r, ctx) {
   r.add('PUT', '/api/chats/:id', async (c) => {
     if (!isId(c.params.id)) return fail(c.res, 400, 'bad_id');
     const chat = store.saveChat(c.params.id, await readJson(c.req));
-    send(c.res, 200, { ok: true, updated: chat.updated });
+    send(c.res, 200, { ok: true, updated: chat.updated, rev: store.rev() });
   });
   r.add('DELETE', '/api/chats/:id', (c) => {
     if (!isId(c.params.id)) return fail(c.res, 400, 'bad_id');
@@ -86,7 +88,7 @@ module.exports = function core(r, ctx) {
     return f ? sendFile(c.req, c.res, f) : fail(c.res, 404, 'not_found');
   }, { cookie: true });
 
-  r.add('POST', '/api/quit', (c) => { send(c.res, 200, { ok: true }); setTimeout(() => ctx.shutdown(0), 200); });
+  r.add('POST', '/api/quit', (c) => { send(c.res, 200, { ok: true }); setTimeout(() => ctx.shutdown(0), 200); }, { owner: true });
 };
 
 function mapPullError(msg) {

@@ -33,7 +33,9 @@ function hostOk(req) {
 function originOk(req) {
   const o = req.headers.origin;
   if (!o) return true;
-  return o === `http://127.0.0.1:${st.port}` || o === `http://localhost:${st.port}`;
+  if (o === `http://127.0.0.1:${st.port}` || o === `http://localhost:${st.port}`) return true;
+  // طلب من الشبكة المحلية (الوصول من الجوال): الأصل يجب أن يطابق المضيف نفسه، والمضيف تحقق منه lan.hostOk مسبقًا
+  return !!req.cafLan && o === `http://${req.headers.host}`;
 }
 
 // مفتاح الـ API المحلي (‎/v1‎): يُولَّد مرة واحدة ويُحفظ في CAF_HOME

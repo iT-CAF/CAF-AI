@@ -45,7 +45,7 @@ async function toggleMic() {
   if (rec) { rec.stop(); return; }
   let stream;
   try { stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } }); }
-  catch { toast(t('micDenied')); return; }
+  catch { toast(t(window.isSecureContext ? 'micDenied' : 'micInsecure'), 5000); return; }
   const chunks = []; rec = new MediaRecorder(stream);
   rec.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
   rec.onstop = async () => {
